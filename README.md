@@ -1,65 +1,28 @@
 # FRANK — AI Video Generator
 
-Turn your ideas into videos. Premium dark UI · text-to-video via [Puter.js](https://docs.puter.com/) · no Hugging Face token required.
+**Engine:** OpenAI **Sora 2** via [Puter.js](https://docs.puter.com/AI/txt2vid/) (single model, no multi-model pipeline).
 
-**Live:** https://joeyfrogge-jpg.github.io/frank/
+**Live (enable Pages first):** https://joeyfrogge-jpg.github.io/frank/
 
-## Features
+Also available on: https://joeyfrogge-jpg.github.io/reelriot/
 
-- **Prompt → video** with Puter AI models (Wan / Seedance and more)
-- **Reference images** (image-to-video) via Add Reference
-- **Quick Create:** From Photo, From Text, AI Magic
-- **Library** — private videos stored on your device (IndexedDB)
-- **Recent Creations** — empty until you generate something real
-- **Explore** — optional shared public feed (Supabase)
-- **Settings** — duration (5–60s), format, Puter sign-in
+## How it works
 
-## How to use
-
-1. Open the site and allow **Puter** sign-in when prompted (User-Pays credits).
-2. Write a prompt (or pick a chip / Quick Create).
-3. Optionally **Add Reference** photos.
-4. Tap the purple **→** button to generate.
-5. Videos save to **Library** on this device.
+1. Open the site → allow **Puter** sign-in when prompted (User-Pays credits).
+2. Write a prompt and optionally **Add Reference**.
+3. Pick **5s / 10s / 20s** (locked when you hit Generate).
+4. Tap **→** — FRANK calls `puter.ai.txt2vid` with `model: "openai/sora-2"`.
+5. Video saves to **Library** on this device (IndexedDB).
 
 ## GitHub Pages
 
-1. Repo **Settings → Pages**
-2. Source: **Deploy from a branch**
-3. Branch: **main** / **/** (root)
-4. Save — site at `https://joeyfrogge-jpg.github.io/frank/`
+1. **Settings → Pages** on this repo  
+2. Source: **Deploy from a branch** → `main` / `/` (root) → Save  
 
-## Explore (optional shared feed)
+## Explore (optional)
 
-Without Supabase, Explore stays empty (no fake posts).
+Supabase table `frank_explore` + anon key in Settings. Leave empty for an empty Explore (no fake posts).
 
-1. Create a free [Supabase](https://supabase.com) project.
-2. SQL Editor — run:
+## Version
 
-```sql
-create table frank_explore (
-  id text primary key,
-  prompt text,
-  caption text,
-  video_url text not null,
-  creator text,
-  created_at timestamptz default now()
-);
-alter table frank_explore enable row level security;
-create policy "public read" on frank_explore for select using (true);
-create policy "anon insert" on frank_explore for insert with check (true);
-```
-
-3. In the app **Settings**, paste Project URL + anon key.
-4. Use **Share to Explore** after generating a video.
-
-## Stack
-
-- Static single-page app (`index.html`)
-- [Puter.js](https://js.puter.com/v2/) for video generation
-- IndexedDB for private library
-- Optional Supabase REST for public Explore
-
-## Related
-
-Also on Reel Riot: https://joeyfrogge-jpg.github.io/reelriot/
+`frank-sora-2.0`
