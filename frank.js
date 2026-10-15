@@ -1,9 +1,10 @@
-
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
-const VERSION="frank-sora-2.0";
-/** Single engine: OpenAI Sora 2 via Puter — no multi-model pipeline */
-const FRANK_MODEL="openai/sora-2";
+const VERSION="frank-wan-2.7";
+/** FRANK engine: Wan 2.7 via Puter (Together AI). Sora IDs are not available. */
+const FRANK_T2V="wan-ai/wan2.7-t2v";
+const FRANK_I2V="wan-ai/wan2.7-i2v";
+const FRANK_MODEL=FRANK_T2V;
 
 const dbp=new Promise((res,rej)=>{
   const r=indexedDB.open("frank-vid",4);
@@ -172,7 +173,7 @@ function enhancePrompt(raw,hasRef){
 async function resultToBlob(result){
   if(result instanceof HTMLVideoElement){
     const src=result.src||result.currentSrc;
-    if(!src)throw new Error("Empty video element from Sora");
+    if(!src)throw new Error("Empty video element from model");
     const r=await fetch(src);const b=await r.blob();
     if(!b.size)throw new Error("Downloaded video was empty");
     return b.type?b:new Blob([b],{type:"video/mp4"});
@@ -193,17 +194,13 @@ async function resultToBlob(result){
     const r=await fetch(result);const b=await r.blob();
     return b.type?b:new Blob([b],{type:"video/mp4"});
   }
-  throw new Error("Unexpected Sora response — no video returned");
+  throw new Error("Unexpected response — no video returned");
 }
 
 async function frankGenerate(prompt,ar,seconds,refDataUrl,onTick){
-  const sec=Math.min(Math.max(Number(seconds)||10,4),20);
-  const opts={
-    prompt,
-    model:FRANK_MODEL,
-    seconds:sec,
-    size:sizeFor(ar)
-  };
+  const sec=Math.min(Math.max(Number(seconds)||10,2),15);
+  const model=refDataUrl?FRANK_I2V:FRANK_T2V;
+  const opts={prompt,model,seconds:sec,size:sizeFor(ar)};
   if(refDataUrl)opts.input_reference=refDataUrl;
   const started=Date.now();
   if(onTick){
@@ -213,7 +210,7 @@ async function frankGenerate(prompt,ar,seconds,refDataUrl,onTick){
   }
   try{
     if(abortGen)throw new Error("Cancelled");
-    const result=await withTimeout(puter.ai.txt2vid(opts),600000,"FRANK · Sora 2");
+    const result=await withTimeout(puter.ai.txt2vid(opts),600000,"FRANK · Wan 2.7");
     if(abortGen)throw new Error("Cancelled");
     return await resultToBlob(result);
   }finally{
@@ -224,11 +221,11 @@ async function frankGenerate(prompt,ar,seconds,refDataUrl,onTick){
 function friendly(e){
   const m=String(e?.message||e||"");
   const code=e?.code||e?.errorCode||"";
-  if(code==="insufficient_funds"||/insufficient/i.test(m))return "Not enough Puter credits for Sora 2.\nAdd credits at puter.com or try a shorter duration.";
+  if(code==="insufficient_funds"||/insufficient/i.test(m))return "Not enough Puter credits.\nAdd credits at puter.com or try 5–10s.";
   if(code==="popup_blocked")return "Popup blocked — allow popups for Puter sign-in.";
   if(code==="moderation_flagged")return "Prompt blocked by content filter. Try rewording.";
-  if(code==="upstream_timeout"||/timed out/i.test(m))return "Sora took too long. Try again with 5–10s.";
-  if(/model not found|not found|deprecated|sunset/i.test(m))return "Sora 2 is unavailable on Puter right now.\n"+m.slice(0,160);
+  if(code==="upstream_timeout"||/timed out/i.test(m))return "Generation timed out. Try again with 5–10s.";
+  if(/model not found|not found|deprecated|sunset/i.test(m))return "Video model unavailable.\n"+m.slice(0,160);
   if(/cancelled/i.test(m))return "Cancelled.";
   return m.slice(0,280);
 }
@@ -237,32 +234,29 @@ async function generate(){
   if(busy)return;
   const promptRaw=$("#prompt").value.trim();
   if(!promptRaw&&!refFiles.length){stat("Add a prompt or reference image first.",true);return}
-
   const lockedSec=LS.get("frank_dur",10);
   const lockedAr=LS.get("frank_ar","9:16");
   const lockedPrompt=enhancePrompt(promptRaw,!!refFiles.length);
   const refData=refFiles[0]?.dataUrl||null;
-
   busy=true;abortGen=false;
   $("#go").disabled=true;$("#go").classList.add("busy");
   $("#result").classList.remove("on");
   lockUI(true);
-
   try{
     await ensurePuterAuth();
     if(abortGen)throw new Error("Cancelled");
-    stat("FRANK · Sora 2 · "+lockedSec+"s\nGenerating… 0s");
+    stat("FRANK · Wan 2.7 · "+lockedSec+"s\nGenerating… 0s");
     const blob=await frankGenerate(lockedPrompt,lockedAr,lockedSec,refData,sec=>{
-      if(!abortGen)stat("FRANK · Sora 2 · "+lockedSec+"s locked\nGenerating… "+sec+"s\nKeep this tab open.");
+      if(!abortGen)stat("FRANK · Wan 2.7 · "+lockedSec+"s locked\nGenerating… "+sec+"s\nKeep this tab open.");
     });
     const id=Date.now()+"-"+Math.random().toString(36).slice(2,8);
-    const meta={id,prompt:lockedPrompt,ts:Date.now(),totalSec:lockedSec,ar:lockedAr,model:FRANK_MODEL};
+    const meta={id,prompt:lockedPrompt,ts:Date.now(),totalSec:Math.min(lockedSec,15),ar:lockedAr,model:refData?FRANK_I2V:FRANK_T2V};
     await persistVideo(meta,blob);
     lastBlob=blob;lastMeta=meta;
     const v=$("#result-vid");
     v.src=URL.createObjectURL(blob);
     $("#result").classList.add("on");
-    stat("Saved to Library · FRANK · Sora 2 · "+VERSION,false,true);
+    stat("Saved to Library · FRANK · Wan 2.7 · "+VERSION,false,true);
     renderRecent();
   }catch(e){
     stat("Generation failed.\n"+friendly(e),true);
@@ -279,7 +273,7 @@ $("#btn-dl").onclick=()=>{
   if(!lastBlob)return;
   const a=document.createElement("a");
   a.href=URL.createObjectURL(lastBlob);
-  a.download="frank-sora-"+Date.now()+".mp4";
+  a.download="frank-"+Date.now()+".mp4";
   a.click();
 };
 
@@ -314,7 +308,7 @@ async function renderLibrary(){
     const u=URL.createObjectURL(blob);
     const d=document.createElement("div");d.className="lib-item";
     d.innerHTML=`<video src="${u}" controls playsinline></video><div class="row"><p></p><div style="display:flex;gap:6px"><button class="btn-soft" type="button" data-a="pub">Publish</button><button class="btn-soft danger" type="button" data-a="del">Delete</button></div></div>`;
-    d.querySelector("p").textContent=(it.prompt||"")+(it.totalSec?" · "+it.totalSec+"s":"")+(it.model?" · Sora 2":"");
+    d.querySelector("p").textContent=(it.prompt||"")+(it.totalSec?" · "+it.totalSec+"s":"")+(it.model?" · Wan 2.7":"");
     d.querySelector('[data-a="del"]').onclick=async()=>{await idbDel(it.id);renderLibrary();renderRecent()};
     d.querySelector('[data-a="pub"]').onclick=()=>{lastBlob=blob;lastMeta=it;openPublish()};
     box.append(d);
@@ -385,14 +379,14 @@ $("#pub-ok").onclick=async()=>{
   finally{$("#pub-ok").disabled=false}
 };
 
-$("#btn-pro").onclick=()=>stat("Pro not configured. Puter User-Pays covers Sora 2 credits.",false);
+$("#btn-pro").onclick=()=>stat("Pro not configured. Puter User-Pays covers generation credits.",false);
 $("#btn-account").onclick=()=>nav("settings");
 $("#btn-signin").onclick=async()=>{try{await ensurePuterAuth();setMsg("Signed in to Puter.",false,true)}catch(e){setMsg(friendly(e),true)}};
 $("#btn-test").onclick=async()=>{
   try{
     setMsg("Loading free sample clip…");
     const v=await withTimeout(puter.ai.txt2vid("A single orange on a black table",true),45000,"Test");
-    setMsg("Sample OK · UI works · "+VERSION+"\nReal generates use FRANK · Sora 2 (uses credits).",false,true);
+    setMsg("Sample OK · UI works · "+VERSION+"\nReal generates use FRANK · Wan 2.7 (uses credits).",false,true);
     if(v instanceof HTMLVideoElement){v.controls=true;v.style.width="100%";v.style.marginTop="8px";$("#set-msg").after(v)}
   }catch(e){setMsg(friendly(e),true)}
 };

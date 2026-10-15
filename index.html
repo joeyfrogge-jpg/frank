@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://js.puter.com/v2/"></script>
 <style>
-:root{--bg:#000;--panel:#0d0d10;--elev:#141418;--line:rgba(255,255,255,.08);--text:#f5f5f7;--muted:#8e8e93;--dim:#5c5c62;--g1:#a78bfa;--g2:#60a5fa;--ok:#34d399;--hot:#f87171;--font:Inter,system-ui,sans-serif;--safe-b:env(safe-area-inset-bottom,0px);--nav-h:calc(64px + var(--safe-b))}
+:root{--bg:#000;--panel:#0d0d10;--elev:#141418;--line:rgba(255,255,255,.08);--text:#f5f5f7;--muted:#8e8e93;--dim:#5c5c62;--font:Inter,system-ui,sans-serif;--safe-b:env(safe-area-inset-bottom,0px);--nav-h:calc(64px + var(--safe-b))}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font)}
 button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;border:0;background:none}
@@ -26,11 +26,11 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .hero h1{margin:0;font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.04em;line-height:1.12}
 .hero h1 .grad{background:linear-gradient(90deg,#c4b5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p{margin:10px 0 0;color:var(--muted);font-size:15px}
-.engine-badge{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 10px;border-radius:999px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.28);font-size:11px;font-weight:600;color:#d4c4ff}
+.engine-badge{display:inline-flex;margin-top:10px;padding:5px 10px;border-radius:999px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.28);font-size:11px;font-weight:600;color:#d4c4ff}
 .composer{margin:0 16px;padding:14px;border-radius:20px;background:linear-gradient(180deg,#121216,#0c0c0f);border:1px solid var(--line)}
 .composer-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.composer-label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
-.btn-ref{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line)}
+.composer-label{font-size:13px;font-weight:600;color:var(--muted)}
+.btn-ref{padding:6px 10px;border-radius:10px;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line)}
 #prompt{width:100%;min-height:72px;border:0;background:transparent;resize:none;font-size:16px;color:var(--text);outline:none}
 #prompt::placeholder{color:var(--dim)}
 .dur-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -49,7 +49,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .ref-thumb button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;font-size:12px}
 .section{padding:22px 16px 0}
 .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.section-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600}
+.section-title{font-size:15px;font-weight:600}
 .see-all{font-size:13px;color:var(--muted);font-weight:500}
 .qc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media(max-width:420px){.qc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -75,7 +75,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .result video{width:100%;border-radius:16px;background:#000;max-height:50vh}
 .result-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .btn-soft{padding:10px 14px;border-radius:12px;background:var(--elev);border:1px solid var(--line);font-size:13px;font-weight:600}
-.btn-soft.danger{color:var(--hot)}
+.btn-soft.danger{color:#f87171}
 .page{display:none}.page.on{display:block}
 .page-pad{padding:8px 16px 24px;max-width:720px;margin:0 auto}
 .page-pad h2{margin:0 0 6px;font-size:26px;font-weight:800;letter-spacing:-.03em}
@@ -121,7 +121,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
       <div class="hero">
         <h1>Turn your ideas<br>into <span class="grad">videos.</span></h1>
         <p>Describe it. Add a reference. Make it real.</p>
-        <div class="engine-badge">FRANK · Sora 2</div>
+        <div class="engine-badge">FRANK · Wan 2.7</div>
       </div>
       <div class="composer" id="composer">
         <div class="composer-top">
@@ -134,7 +134,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
         <div class="dur-row" id="dur-row" role="group" aria-label="Duration">
           <button type="button" class="dur-btn" data-sec="5">5s</button>
           <button type="button" class="dur-btn on" data-sec="10">10s</button>
-          <button type="button" class="dur-btn" data-sec="20">20s</button>
+          <button type="button" class="dur-btn" data-sec="15">15s</button>
         </div>
         <p class="lock-note" id="lock-note">Duration locked while generating</p>
         <div class="composer-bot">
@@ -172,17 +172,17 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
     <section class="page" id="p-library"><div class="page-pad"><h2>Library</h2><p class="page-lead">Your private videos on this device.</p><div class="lib-grid" id="library"></div></div></section>
     <section class="page" id="p-explore"><div class="page-pad"><h2>Explore</h2><p class="page-lead">Public videos shared by FRANK creators.</p><div id="explore"></div></div></section>
     <section class="page" id="p-settings"><div class="page-pad">
-      <h2>Settings</h2><p class="page-lead">FRANK runs on OpenAI Sora 2 via Puter (User-Pays).</p>
+      <h2>Settings</h2><p class="page-lead">FRANK runs on Wan 2.7 via Puter (User-Pays). Sora is not available.</p>
       <div class="settings-card">
-        <label>Default duration<select id="set-dur"><option value="5">5 seconds</option><option value="10" selected>10 seconds</option><option value="20">20 seconds</option></select></label>
+        <label>Default duration<select id="set-dur"><option value="5">5 seconds</option><option value="10" selected>10 seconds</option><option value="15">15 seconds (max)</option></select></label>
         <label>Format<select id="set-ar"><option value="9:16">Vertical (phone)</option><option value="16:9">Wide</option><option value="1:1">Square</option></select></label>
-        <p class="hint">Duration is locked when you tap Generate and cannot change mid-run.</p>
+        <p class="hint">Duration is locked when you tap Generate.</p>
       </div>
       <div class="settings-card"><label>Display name (for Explore)<input id="set-name" placeholder="Creator name" maxlength="40"></label></div>
       <div class="settings-card">
         <label>Explore backend — Supabase URL<input id="set-sb-url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
         <label>Supabase anon key<input id="set-sb-key" placeholder="eyJ…" autocomplete="off"></label>
-        <p class="hint">Optional shared feed. Leave empty → Explore stays empty (no fake posts).</p>
+        <p class="hint">Optional. Leave empty → Explore stays empty.</p>
       </div>
       <div style="display:grid;gap:8px">
         <button class="btn-soft" type="button" id="btn-signin">Sign in to Puter</button>
@@ -199,7 +199,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
     <button type="button" data-nav="settings">⚙<br>Settings</button>
   </nav>
 </div>
-<div class="modal-bg" id="pub-modal"><div class="modal"><h3>Share to Explore</h3><p>Public to other FRANK users (needs Supabase in Settings). Library stays private.</p><textarea id="pub-caption" placeholder="Caption (optional)"></textarea><div class="row"><button class="no" type="button" id="pub-cancel">Cancel</button><button class="ok" type="button" id="pub-ok">Publish</button></div></div></div>
+<div class="modal-bg" id="pub-modal"><div class="modal"><h3>Share to Explore</h3><p>Needs Supabase in Settings. Library stays private.</p><textarea id="pub-caption" placeholder="Caption (optional)"></textarea><div class="row"><button class="no" type="button" id="pub-cancel">Cancel</button><button class="ok" type="button" id="pub-ok">Publish</button></div></div></div>
 <script type="module" src="./frank.js"></script>
 </body>
 </html>
