@@ -18,20 +18,25 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + 12px)}
 .top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:12px}
 .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:18px;letter-spacing:-.02em}
-.brand-mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#c4b5fd,#60a5fa);display:grid;place-content:center}
+.brand-mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#c4b5fd,#60a5fa);display:grid;place-content:center;font-size:14px}
 .top-actions{display:flex;align-items:center;gap:8px}
 .btn-pro{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:linear-gradient(135deg,rgba(139,92,246,.25),rgba(96,165,250,.2));border:1px solid rgba(167,139,250,.35);font-size:13px;font-weight:600;color:#e9e0ff}
 .btn-avatar{width:36px;height:36px;border-radius:50%;background:var(--elev);border:1px solid var(--line);display:grid;place-content:center;color:var(--muted)}
-.hero{padding:8px 20px 20px}
+.hero{padding:8px 20px 16px}
 .hero h1{margin:0;font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.04em;line-height:1.12}
 .hero h1 .grad{background:linear-gradient(90deg,#c4b5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p{margin:10px 0 0;color:var(--muted);font-size:15px}
+.engine-badge{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 10px;border-radius:999px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.28);font-size:11px;font-weight:600;color:#d4c4ff}
 .composer{margin:0 16px;padding:14px;border-radius:20px;background:linear-gradient(180deg,#121216,#0c0c0f);border:1px solid var(--line)}
 .composer-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .composer-label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
 .btn-ref{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line)}
 #prompt{width:100%;min-height:72px;border:0;background:transparent;resize:none;font-size:16px;color:var(--text);outline:none}
 #prompt::placeholder{color:var(--dim)}
+.dur-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.dur-btn{padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--muted)}
+.dur-btn.on{background:rgba(167,139,250,.18);border-color:rgba(167,139,250,.45);color:#e9e0ff}
+.dur-btn:disabled{opacity:.4}
 .composer-bot{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
 .chips{display:flex;flex-wrap:wrap;gap:6px;flex:1}
 .chip{padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--muted)}
@@ -91,7 +96,6 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .settings-card .hint{font-size:12px;color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0;margin-top:6px}
 .bnav{position:fixed;left:0;right:0;bottom:0;padding:6px 0 var(--safe-b);background:rgba(10,10,12,.92);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;z-index:20}
 .bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px;color:var(--dim);font-size:10px;font-weight:600}
-.bnav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
 .bnav button.on{color:var(--text)}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:40;display:none;align-items:flex-end;justify-content:center}
 .modal-bg.on{display:flex}
@@ -100,6 +104,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .modal textarea{width:100%;min-height:80px;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:12px;resize:vertical;margin-bottom:12px}
 .modal .row{display:flex;gap:8px}.modal .row button{flex:1;padding:12px;border-radius:12px;font-weight:600}
 .modal .row .ok{background:linear-gradient(135deg,#a78bfa,#60a5fa);color:#fff}.modal .row .no{background:var(--elev);border:1px solid var(--line)}
+.lock-note{font-size:11px;color:var(--dim);margin-top:8px;display:none}.lock-note.on{display:block}
 </style>
 </head>
 <body>
@@ -116,6 +121,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
       <div class="hero">
         <h1>Turn your ideas<br>into <span class="grad">videos.</span></h1>
         <p>Describe it. Add a reference. Make it real.</p>
+        <div class="engine-badge">FRANK · Sora 2</div>
       </div>
       <div class="composer" id="composer">
         <div class="composer-top">
@@ -125,9 +131,15 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
         </div>
         <textarea id="prompt" placeholder="What do you want to create?" rows="3"></textarea>
         <div class="refs" id="refs"></div>
+        <div class="dur-row" id="dur-row" role="group" aria-label="Duration">
+          <button type="button" class="dur-btn" data-sec="5">5s</button>
+          <button type="button" class="dur-btn on" data-sec="10">10s</button>
+          <button type="button" class="dur-btn" data-sec="20">20s</button>
+        </div>
+        <p class="lock-note" id="lock-note">Duration locked while generating</p>
         <div class="composer-bot">
           <div class="chips">
-            <button class="chip" type="button" data-p="Cinematic outdoor adventure through misty mountains at sunrise, sweeping drone shot">Outdoor adventure</button>
+            <button class="chip" type="button" data-p="Cinematic outdoor adventure through misty mountains at sunrise, sweeping drone shot, natural light">Outdoor adventure</button>
             <button class="chip" type="button" data-p="Clean product demo of a modern gadget on a minimal desk, soft studio lighting, slow orbit camera">Product demo</button>
             <button class="chip" type="button" data-p="Funny skit: two friends arguing about who ate the last slice of pizza, exaggerated expressions, comedy timing">Funny skit</button>
           </div>
@@ -139,14 +151,15 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
         <video id="result-vid" controls playsinline></video>
         <div class="result-actions">
           <button class="btn-soft" type="button" id="btn-publish">Share to Explore</button>
-          <button class="btn-soft" type="button" id="btn-save-lib">Saved to Library</button>
+          <button class="btn-soft" type="button" id="btn-dl">Download</button>
+          <button class="btn-soft danger" type="button" id="btn-cancel" style="display:none">Cancel</button>
         </div>
       </div>
       <div class="section">
         <div class="section-head"><div class="section-title">⚡ Quick Create</div></div>
         <div class="qc-grid">
           <button class="qc-card" type="button" data-mode="photo"><div class="bg" style="background-image:url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=60')"></div><div class="shade"></div><div class="body"><div class="ico">🖼</div><strong>From Photo</strong><span>Bring your images to life</span></div></button>
-          <button class="qc-card" type="button" data-mode="video"><div class="bg" style="background-image:url('https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=60')"></div><div class="shade"></div><div class="body"><div class="ico">▶</div><strong>From Video</strong><span>Add new scenes & style</span></div></button>
+          <button class="qc-card" type="button" data-mode="video"><div class="bg" style="background-image:url('https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=60')"></div><div class="shade"></div><div class="body"><div class="ico">▶</div><strong>From Video</strong><span>Coming soon</span></div></button>
           <button class="qc-card" type="button" data-mode="text"><div class="bg" style="background:linear-gradient(145deg,#1e1b4b,#312e81)"></div><div class="shade"></div><div class="body"><div class="ico">T</div><strong>From Text</strong><span>Turn words into video</span></div></button>
           <button class="qc-card" type="button" data-mode="magic"><div class="bg" style="background-image:url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=400&q=60')"></div><div class="shade"></div><div class="body"><div class="ico">✦</div><strong>AI Magic</strong><span>Surprise me</span></div></button>
         </div>
@@ -159,18 +172,23 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
     <section class="page" id="p-library"><div class="page-pad"><h2>Library</h2><p class="page-lead">Your private videos on this device.</p><div class="lib-grid" id="library"></div></div></section>
     <section class="page" id="p-explore"><div class="page-pad"><h2>Explore</h2><p class="page-lead">Public videos shared by FRANK creators.</p><div id="explore"></div></div></section>
     <section class="page" id="p-settings"><div class="page-pad">
-      <h2>Settings</h2><p class="page-lead">Generation preferences & account.</p>
+      <h2>Settings</h2><p class="page-lead">FRANK runs on OpenAI Sora 2 via Puter (User-Pays).</p>
       <div class="settings-card">
-        <label>Default duration<select id="set-dur"><option value="5">5 seconds</option><option value="10" selected>10 seconds</option><option value="20">20 seconds (2 clips)</option><option value="30">30 seconds (3 clips)</option><option value="60">60 seconds (6 clips)</option></select></label>
+        <label>Default duration<select id="set-dur"><option value="5">5 seconds</option><option value="10" selected>10 seconds</option><option value="20">20 seconds</option></select></label>
         <label>Format<select id="set-ar"><option value="9:16">Vertical (phone)</option><option value="16:9">Wide</option><option value="1:1">Square</option></select></label>
+        <p class="hint">Duration is locked when you tap Generate and cannot change mid-run.</p>
       </div>
       <div class="settings-card"><label>Display name (for Explore)<input id="set-name" placeholder="Creator name" maxlength="40"></label></div>
       <div class="settings-card">
         <label>Explore backend — Supabase URL<input id="set-sb-url" placeholder="https://xxxx.supabase.co" autocomplete="off"></label>
         <label>Supabase anon key<input id="set-sb-key" placeholder="eyJ…" autocomplete="off"></label>
-        <p class="hint">Optional. Enables shared public Explore. Create free project at supabase.com, create table frank_explore, paste URL + anon key. Leave empty → Explore stays empty (no fake posts).</p>
+        <p class="hint">Optional shared feed. Leave empty → Explore stays empty (no fake posts).</p>
       </div>
-      <div style="display:grid;gap:8px"><button class="btn-soft" type="button" id="btn-signin">Sign in to Puter</button><button class="btn-soft" type="button" id="btn-test">Test sample clip</button><button class="btn-soft danger" type="button" id="btn-wipe">Erase all private videos</button></div>
+      <div style="display:grid;gap:8px">
+        <button class="btn-soft" type="button" id="btn-signin">Sign in to Puter</button>
+        <button class="btn-soft" type="button" id="btn-test">Test sample clip (free)</button>
+        <button class="btn-soft danger" type="button" id="btn-wipe">Erase all private videos</button>
+      </div>
       <div class="status" id="set-msg" style="margin:12px 0 0"></div>
     </div></section>
   </div>
@@ -182,52 +200,6 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
   </nav>
 </div>
 <div class="modal-bg" id="pub-modal"><div class="modal"><h3>Share to Explore</h3><p>Public to other FRANK users (needs Supabase in Settings). Library stays private.</p><textarea id="pub-caption" placeholder="Caption (optional)"></textarea><div class="row"><button class="no" type="button" id="pub-cancel">Cancel</button><button class="ok" type="button" id="pub-ok">Publish</button></div></div></div>
-<script type="module">
-const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];const VERSION="frank-1.0";
-const dbp=new Promise((res,rej)=>{const r=indexedDB.open("frank-vid",3);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("v"))d.createObjectStore("v",{keyPath:"id"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-const tx=async(m,f)=>{const d=await dbp;return new Promise((res,rej)=>{const t=d.transaction("v",m);const q=f(t.objectStore("v"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
-const idbPut=o=>tx("readwrite",s=>s.put(o));const idbAll=async()=>(await tx("readonly",s=>s.getAll())||[]).sort((a,b)=>b.ts-a.ts);const idbDel=id=>tx("readwrite",s=>s.delete(id));
-async function persistVideo(meta,blob){if(!blob||!blob.size)throw new Error("Empty video");const buf=await blob.arrayBuffer();const rec={id:meta.id,prompt:meta.prompt,ts:meta.ts,segments:meta.segments||1,totalSec:meta.totalSec,ar:meta.ar||"",mime:blob.type||"video/mp4",data:buf};await idbPut(rec);return rec}
-function recBlob(rec){if(rec.data)return new Blob([rec.data],{type:rec.mime||"video/mp4"});return null}
-const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-function loadSettings(){$("#set-dur").value=String(LS.get("frank_dur",10));$("#set-ar").value=LS.get("frank_ar","9:16");$("#set-name").value=LS.get("frank_name","")||"";$("#set-sb-url").value=LS.get("frank_sb_url","")||"";$("#set-sb-key").value=LS.get("frank_sb_key","")||""}
-function saveSettings(){LS.set("frank_dur",+$("#set-dur").value);LS.set("frank_ar",$("#set-ar").value);LS.set("frank_name",$("#set-name").value.trim());LS.set("frank_sb_url",$("#set-sb-url").value.trim());LS.set("frank_sb_key",$("#set-sb-key").value.trim())}
-["set-dur","set-ar","set-name","set-sb-url","set-sb-key"].forEach(id=>{const el=$("#"+id);if(el){el.addEventListener("change",saveSettings);el.addEventListener("blur",saveSettings)}});
-function nav(page){$$(".page").forEach(p=>p.classList.toggle("on",p.id==="p-"+page));$$("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.nav===page));if(page==="library")renderLibrary();if(page==="explore")renderExplore();if(page==="home")renderRecent();if(page==="settings")loadSettings()}
-$$("#bnav button").forEach(b=>b.onclick=()=>nav(b.dataset.nav));$$("[data-nav]").forEach(b=>{if(!b.closest("#bnav"))b.onclick=()=>nav(b.dataset.nav)});
-let refFiles=[];
-function renderRefs(){const box=$("#refs");if(!refFiles.length){box.classList.remove("on");box.innerHTML="";return}box.classList.add("on");box.innerHTML="";refFiles.forEach((r,i)=>{const d=document.createElement("div");d.className="ref-thumb";d.innerHTML=`<img src="${r.url}" alt=""><button type="button">×</button>`;d.querySelector("button").onclick=()=>{URL.revokeObjectURL(r.url);refFiles.splice(i,1);renderRefs()};box.append(d)})}
-$("#btn-ref").onclick=()=>$("#ref-input").click();
-$("#ref-input").onchange=async e=>{const files=[...e.target.files||[]].filter(f=>/^image\/(jpeg|png|webp|gif)$/i.test(f.type));e.target.value="";for(const f of files){if(f.size>8*1024*1024){stat("Image too large (max 8MB)",true);continue}if(refFiles.length>=3){stat("Max 3 reference images",true);break}const url=URL.createObjectURL(f);const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});refFiles.push({file:f,url,dataUrl})}renderRefs()};
-$$(".chip[data-p]").forEach(b=>b.onclick=()=>{const t=$("#prompt");const ins=b.dataset.p;if(!t.value.trim())t.value=ins;else if(!t.value.includes(ins))t.value=(t.value.trim()+"\n"+ins).trim();t.focus()});
-const MAGIC=["A neon jellyfish orchestra under the aurora, cinematic","Tiny astronauts skateboarding Saturn rings, whimsical","A library where books fly open as glowing particles","Cyberpunk rainy night market, steam and reflections"];
-$$(".qc-card").forEach(b=>b.onclick=()=>{const m=b.dataset.mode;if(m==="photo"){$("#ref-input").click();$("#prompt").focus();stat("Add a reference photo, then describe the motion.",false)}else if(m==="video"){stat("From Video is not supported by the current Puter path. Use From Text or From Photo.",true)}else if(m==="text"){$("#prompt").focus();$("#composer").scrollIntoView({behavior:"smooth",block:"center"})}else if(m==="magic"){$("#prompt").value=MAGIC[Math.floor(Math.random()*MAGIC.length)];$("#prompt").focus()}});
-let busy=false,lastBlob=null,lastMeta=null,tickTimer=null;
-const stat=(t,err,ok)=>{const s=$("#stat");s.className="status on"+(err?" err":ok?" ok":"");s.textContent=t};
-const setMsg=(t,err,ok)=>{const s=$("#set-msg");s.className="status on"+(err?" err":ok?" ok":"");s.textContent=t};
-function withTimeout(p,ms,label){let to;const t=new Promise((_,rej)=>{to=setTimeout(()=>rej(new Error((label||"Request")+" timed out")),ms)});return Promise.race([p,t]).finally(()=>clearTimeout(to))}
-async function ensurePuterAuth(){if(typeof puter==="undefined")throw new Error("Puter.js failed to load");try{if(puter.auth?.isSignedIn&&await puter.auth.isSignedIn())return}catch(_){}if(puter.auth?.signIn){stat("Opening Puter sign-in…");await puter.auth.signIn({attempt_temp_user_creation:true})}}
-function sizeFor(ar){return ar==="9:16"?"720x1280":ar==="1:1"?"720x720":"1280x720"}
-function buildPrompts(base,totalSec){const chunk=totalSec<=5?5:10;const n=Math.max(1,Math.ceil(totalSec/chunk));const beats=[];for(let i=0;i<n;i++){if(n===1)beats.push(`Photorealistic cinematic video: ${base}. Continuous shot, coherent motion, no text, no watermark.`);else if(i===0)beats.push(`Photorealistic cinematic video, opening: ${base}. Establishing shot, no text.`);else beats.push(`Photorealistic cinematic video, part ${i+1}/${n}: ${base}. Same style, continue smoothly, no text.`)}return{beats,chunk}}
-async function resultToBlob(result){if(result instanceof HTMLVideoElement){const src=result.src||result.currentSrc;if(!src)throw new Error("Empty video");const r=await fetch(src);const b=await r.blob();return b.type?b:new Blob([b],{type:"video/mp4"})}if(result instanceof Blob)return result;if(result&&typeof result==="object"){const url=result.src||result.url||result.video_url;if(typeof url==="string"){const r=await fetch(url);const b=await r.blob();return b.type?b:new Blob([b],{type:"video/mp4"})}}if(typeof result==="string"&&/^https?:/i.test(result)){const r=await fetch(result);const b=await r.blob();return b.type?b:new Blob([b],{type:"video/mp4"})}throw new Error("Unexpected Puter response")}
-async function frankClip(prompt,ar,seconds,refDataUrl,onTick){const sec=Math.min(Math.max(Number(seconds)||5,4),10);const opts={prompt,seconds:sec,size:sizeFor(ar)};if(refDataUrl)opts.input_reference=refDataUrl;const started=Date.now();if(onTick){onTick(0);clearInterval(tickTimer);tickTimer=setInterval(()=>onTick(Math.round((Date.now()-started)/1000)),1000)}try{const result=await withTimeout(puter.ai.txt2vid(opts),240000,"Video generation");return await resultToBlob(result)}finally{clearInterval(tickTimer)}}
-function friendly(e){const m=String(e?.message||e||"");const code=e?.code||e?.errorCode;if(code==="insufficient_funds"||/insufficient/i.test(m))return "Not enough Puter credits.";if(code==="popup_blocked")return "Popup blocked — allow popups.";return m.slice(0,220)}
-async function generate(){if(busy)return;const prompt=$("#prompt").value.trim();if(!prompt&&!refFiles.length){stat("Add a prompt or reference image first.",true);return}const lockedSec=LS.get("frank_dur",10);const lockedAr=LS.get("frank_ar","9:16");const lockedPrompt=prompt||"Animate this image with natural motion, cinematic lighting";const refData=refFiles[0]?.dataUrl||null;busy=true;$("#go").disabled=true;$("#go").classList.add("busy");$("#result").classList.remove("on");try{await ensurePuterAuth();const{beats,chunk}=buildPrompts(lockedPrompt,lockedSec);const blobs=[];for(let i=0;i<beats.length;i++){const blob=await frankClip(beats[i],lockedAr,chunk,i===0?refData:null,sec=>stat(`Scene ${i+1}/${beats.length} · ${chunk}s\nGenerating… ${sec}s`));blobs.push(blob)}let final=blobs[0];const id=Date.now()+"-"+Math.random().toString(36).slice(2,8);const meta={id,prompt:lockedPrompt,ts:Date.now(),segments:blobs.length,totalSec:lockedSec,ar:lockedAr};await persistVideo(meta,final);lastBlob=final;lastMeta=meta;const v=$("#result-vid");v.src=URL.createObjectURL(final);$("#result").classList.add("on");stat("Saved to Library · "+VERSION,false,true);renderRecent()}catch(e){stat("Generation failed.\n"+friendly(e),true)}finally{busy=false;$("#go").disabled=false;$("#go").classList.remove("busy")}}
-$("#go").onclick=()=>generate();
-async function renderRecent(){const box=$("#recent");let items=[];try{items=await idbAll()}catch(_){}if(!items.length){box.innerHTML=`<div class="empty-box"><strong>No creations yet.</strong><p>Your next idea starts here.</p><button class="btn-link" type="button" id="empty-go">Start creating</button></div>`;$("#empty-go")?.addEventListener("click",()=>{$("#prompt").focus()});return}const row=document.createElement("div");row.className="recent-row";for(const it of items.slice(0,12)){const blob=recBlob(it);if(!blob)continue;const u=URL.createObjectURL(blob);const c=document.createElement("div");c.className="recent-card";c.innerHTML=`<video src="${u}" muted playsinline></video><div class="meta"></div>`;c.querySelector(".meta").textContent=it.prompt||"Untitled";c.onclick=()=>nav("library");row.append(c)}box.replaceChildren(row)}
-async function renderLibrary(){const box=$("#library");let items=[];try{items=await idbAll()}catch(e){box.innerHTML=`<div class="empty-box"><strong>Error</strong><p>${e.message}</p></div>`;return}if(!items.length){box.innerHTML=`<div class="empty-box"><strong>No creations yet.</strong><p>Your next idea starts here.</p></div>`;return}box.innerHTML="";for(const it of items){const blob=recBlob(it);if(!blob)continue;const u=URL.createObjectURL(blob);const d=document.createElement("div");d.className="lib-item";d.innerHTML=`<video src="${u}" controls playsinline></video><div class="row"><p></p><div style="display:flex;gap:6px"><button class="btn-soft" type="button" data-a="pub">Publish</button><button class="btn-soft danger" type="button" data-a="del">Delete</button></div></div>`;d.querySelector("p").textContent=(it.prompt||"")+(it.totalSec?" · "+it.totalSec+"s":"");d.querySelector('[data-a="del"]').onclick=async()=>{await idbDel(it.id);renderLibrary();renderRecent()};d.querySelector('[data-a="pub"]').onclick=()=>{lastBlob=blob;lastMeta=it;openPublish()};box.append(d)}}
-function sbConfig(){const url=($("#set-sb-url")?.value||LS.get("frank_sb_url","")||"").trim().replace(/\/$/,"");const key=($("#set-sb-key")?.value||LS.get("frank_sb_key","")||"").trim();return url&&key?{url,key}:null}
-async function sbFetch(path,opts={}){const cfg=sbConfig();if(!cfg)throw new Error("NO_SB");const r=await fetch(cfg.url+"/rest/v1/"+path,{...opts,headers:{apikey:cfg.key,Authorization:"Bearer "+cfg.key,"Content-Type":"application/json",Prefer:opts.prefer||"return=representation",...(opts.headers||{})}});if(!r.ok){const t=await r.text();throw new Error(t.slice(0,160)||r.status)}if(r.status===204)return null;return r.json()}
-async function renderExplore(){const box=$("#explore");const cfg=sbConfig();if(!cfg){box.innerHTML=`<div class="empty-box"><strong>It's quiet in here.</strong><p>Connect a free Supabase project in Settings for a shared public feed. No fake posts.</p><button class="btn-link" type="button" data-nav="settings">Open Settings</button></div>`;box.querySelector("[data-nav]")?.addEventListener("click",()=>nav("settings"));return}box.innerHTML=`<div class="empty-box"><p>Loading…</p></div>`;try{const rows=await sbFetch("frank_explore?select=*&order=created_at.desc&limit=50");if(!rows||!rows.length){box.innerHTML=`<div class="empty-box"><strong>It's quiet in here.</strong><p>Be the first to drop a creation.</p></div>`;return}const grid=document.createElement("div");grid.className="explore-grid";for(const row of rows){const c=document.createElement("div");c.className="ex-card";c.innerHTML=`<video src="${row.video_url}" controls playsinline preload="metadata"></video><div class="body"><div class="who"></div><div class="cap"></div></div>`;c.querySelector(".who").textContent=row.creator||"FRANK creator";c.querySelector(".cap").textContent=row.caption||row.prompt||"";grid.append(c)}box.replaceChildren(grid)}catch(e){box.innerHTML=`<div class="empty-box"><strong>Feed unavailable</strong><p>${friendly(e)}</p></div>`}}
-function openPublish(){if(!lastBlob||!lastMeta){stat("Generate a video first.",true);return}$("#pub-caption").value=lastMeta.prompt||"";$("#pub-modal").classList.add("on")}
-$("#btn-publish").onclick=openPublish;$("#pub-cancel").onclick=()=>$("#pub-modal").classList.remove("on");
-$("#pub-ok").onclick=async()=>{const cfg=sbConfig();if(!cfg){stat("Add Supabase in Settings to publish.",true);$("#pub-modal").classList.remove("on");nav("settings");return}try{$("#pub-ok").disabled=true;let videoUrl="";if(typeof puter!=="undefined"&&puter.fs){const path=`frank-public/frank-pub-${Date.now()}.webm`;await puter.fs.mkdir("frank-public").catch(()=>{});await puter.fs.write(path,lastBlob);videoUrl=await puter.fs.getReadURL(path)}else throw new Error("Puter filesystem needed for public video URL");const creator=($("#set-name").value||LS.get("frank_name","")||"Anonymous").trim()||"Anonymous";await sbFetch("frank_explore",{method:"POST",body:JSON.stringify({id:lastMeta.id||String(Date.now()),prompt:lastMeta.prompt||"",caption:$("#pub-caption").value.trim(),video_url:videoUrl,creator})});$("#pub-modal").classList.remove("on");stat("Published to Explore.",false,true);nav("explore")}catch(e){stat("Publish failed.\n"+friendly(e),true)}finally{$("#pub-ok").disabled=false}};
-$("#btn-pro").onclick=()=>stat("Pro not configured. Puter User-Pays covers generation credits.",false);
-$("#btn-account").onclick=()=>nav("settings");
-$("#btn-signin").onclick=async()=>{try{await ensurePuterAuth();setMsg("Signed in to Puter.",false,true)}catch(e){setMsg(friendly(e),true)}};
-$("#btn-test").onclick=async()=>{try{const v=await withTimeout(puter.ai.txt2vid("A single orange on a black table",true),30000,"Test");setMsg("Sample OK · "+VERSION,false,true);if(v instanceof HTMLVideoElement){v.controls=true;v.style.width="100%";v.style.marginTop="8px";$("#set-msg").after(v)}}catch(e){setMsg(friendly(e),true)}};
-$("#btn-wipe").onclick=async()=>{if(!confirm("Erase all private videos?"))return;for(const i of await idbAll())await idbDel(i.id);renderLibrary();renderRecent();setMsg("Cleared.",false,true)};
-loadSettings();renderRecent();
-</script>
+<script type="module" src="./frank.js"></script>
 </body>
 </html>
