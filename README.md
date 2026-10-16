@@ -1,28 +1,49 @@
-# FRANK — AI Video Generator
+# FRANKGPT — AI Video Generator
 
-**Engine:** OpenAI **Sora 2** via [Puter.js](https://docs.puter.com/AI/txt2vid/) (single model, no multi-model pipeline).
+**Engine:** Alibaba **Wan 2.7** (text-to-video + image-to-video) via [Puter.js](https://docs.puter.com/AI/txt2vid/).
 
-**Live (enable Pages first):** https://joeyfrogge-jpg.github.io/frank/
+**Live:** https://joeyfrogge-jpg.github.io/frank/
 
-Also available on: https://joeyfrogge-jpg.github.io/reelriot/
+Also: https://joeyfrogge-jpg.github.io/frank/iphone.html (iPhone-optimized)
 
-## How it works
+## What it does
 
-1. Open the site → allow **Puter** sign-in when prompted (User-Pays credits).
-2. Write a prompt and optionally **Add Reference**.
-3. Pick **5s / 10s / 20s** (locked when you hit Generate).
-4. Tap **→** — FRANK calls `puter.ai.txt2vid` with `model: "openai/sora-2"`.
-5. Video saves to **Library** on this device (IndexedDB).
+FRANKGPT turns text prompts (and optional reference photos) into short AI videos.
+
+- Prompt + optional photo → generate
+- 5s / 10s / 15s lengths
+- Vertical / wide / square
+- Library saved on-device (IndexedDB)
+- Works in Safari, Chrome, and as installable PWA
+
+## How to use
+
+1. Open the site → sign in to Puter when prompted (you pay for your own generations — no API keys needed).
+2. Write a prompt. Optionally add a reference photo.
+3. Choose length and format.
+4. Tap **→**. Video is generated with Wan 2.7 and saved to your Library.
+
+## Files
+
+| File | Purpose |
+|------|--------|
+| `iphone.html` | Main iPhone / mobile experience |
+| `index.html` | Desktop / general web version |
+| `standalone.html` | Hugging Face Gradio fallback (no Puter) |
+| `frank.js` | Shared engine logic |
+| `dual.html` | Experimental dual-model |
 
 ## GitHub Pages
 
-1. **Settings → Pages** on this repo  
-2. Source: **Deploy from a branch** → `main` / `/` (root) → Save  
-
-## Explore (optional)
-
-Supabase table `frank_explore` + anon key in Settings. Leave empty for an empty Explore (no fake posts).
+1. Repo **Settings → Pages**
+2. Source: **Deploy from a branch** → `main` / root → Save
 
 ## Version
 
-`frank-sora-2.0`
+`frankgpt-1.0` (Wan 2.7)
+
+## Notes
+
+- No Supabase required for core functionality.
+- Public feed / Explore is optional and can be added later without forced sign-in.
+- For a real Android APK: wrap this PWA with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) or Capacitor.
