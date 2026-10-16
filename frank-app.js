@@ -1,20 +1,41 @@
-/* frankgpt — assembles free AI client from parts */
+/* frankgpt free — Pollinations image + Ken Burns video, no server */
 (function(){
-  var parts = ["frank-part0.js","frank-part1.js","frank-part2.js"];
-  var code = "";
-  var i = 0;
-  function next(){
-    if(i >= parts.length){
-      var s = document.createElement("script");
-      s.text = code;
-      document.head.appendChild(s);
-      return;
-    }
-    fetch(parts[i] + "?v=3").then(function(r){ return r.text(); }).then(function(t){
-      code += t;
-      i++;
-      next();
-    }).catch(function(e){ console.error(e); alert("Failed to load app: "+e); });
-  }
-  next();
+"use strict";
+function $(s,r){return(r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+var state={token:localStorage.getItem("frank_token")||"",guestKey:localStorage.getItem("frank_guest")||"",user:null,style:"realistic",duration:10,aspect:"9:16",busy:false};
+function toast(m){var el=$("#toast");if(!el){alert(m);return}el.textContent=m;el.classList.add("on");clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove("on")},3000)}
+function showStat(m,err,ok){var el=$("#stat");if(!el)return;el.className="status on"+(err?" err":ok?" ok":"");el.textContent=m}
+function ensureGuest(){if(!state.guestKey&&!state.token){state.guestKey="g_"+Math.random().toString(36).slice(2);localStorage.setItem("frank_guest",state.guestKey)}}
+function showScreen(n){$$(".screen").forEach(function(s){s.classList.remove("on")});var el=$("#screen-"+n);if(el)el.classList.add("on");$$("#nav button[data-screen]").forEach(function(b){var fab=b.classList.contains("fab");if(fab)b.classList.toggle("on",n==="create");else b.classList.toggle("on",b.getAttribute("data-screen")===n)});if(n==="explore")$$("#nav button[data-screen=explore]").forEach(function(b){b.classList.add("on")});if(n==="library")loadLibrary()}
+function enterApp(){var g=$("#gate");if(g)g.classList.add("off");var n=$("#nav");if(n)n.style.display="flex";showScreen("explore")}
+function goGuest(){ensureGuest();state.token="";localStorage.removeItem("frank_token");state.user={name:"Guest",plan:"guest"};enterApp();toast("Welcome — Guest")}
+var bg=$("#btn-guest");if(bg)bg.addEventListener("click",function(e){e.preventDefault();goGuest()});
+var be=$("#btn-email");if(be)be.addEventListener("click",function(e){e.preventDefault();toast("Use Continue as Guest — email needs your own server")});
+var bp=$("#btn-phone");if(bp)bp.addEventListener("click",function(e){e.preventDefault();toast("Use Continue as Guest — phone needs your own server")});
+var bgo=$("#btn-google");if(bgo)bgo.addEventListener("click",function(e){e.preventDefault();toast("Use Continue as Guest — Google needs your own server")});
+var bs=$("#btn-signout");if(bs)bs.addEventListener("click",function(){state.token="";localStorage.removeItem("frank_token");var g=$("#gate");if(g)g.classList.remove("off");var n=$("#nav");if(n)n.style.display="none";$$(".screen").forEach(function(s){s.classList.remove("on")});toast("Signed out")});
+var pr=$("#prompt");if(pr)pr.addEventListener("input",function(){var c=$("#prompt-count");if(c)c.textContent=(pr.value||"").length});
+$$("#styles .chip").forEach(function(c){c.addEventListener("click",function(){$$("#styles .chip").forEach(function(x){x.classList.remove("on")});c.classList.add("on");state.style=c.getAttribute("data-style")||"realistic"})});
+$$("#durs .chip").forEach(function(c){c.addEventListener("click",function(){$$("#durs .chip").forEach(function(x){x.classList.remove("on")});c.classList.add("on");state.duration=Number(c.getAttribute("data-dur"))||10})});
+$$("#aspects .chip").forEach(function(c){c.addEventListener("click",function(){$$("#aspects .chip").forEach(function(x){x.classList.remove("on")});c.classList.add("on");state.aspect=c.getAttribute("data-aspect")||"9:16"})});
+function enhance(p,s){var m={realistic:"photorealistic, highly detailed, natural lighting",cinematic:"cinematic, dramatic lighting, film grain",animated:"animated, stylized, vibrant colors",abstract:"abstract, surreal, artistic"};return m[s]?p.trim()+". "+m[s]:p.trim()}
+function pollUrl(prompt,w,h){return "https://image.pollinations.ai/prompt/"+encodeURIComponent((prompt||"scene").slice(0,180))+"?width="+(w||768)+"&height="+(h||1344)+"&nologo=true&enhance=true&seed="+Math.floor(Math.random()*1e9)}
+function loadImg(url){return new Promise(function(res,rej){var i=new Image();i.crossOrigin="anonymous";i.onload=function(){res(i)};i.onerror=function(){rej(new Error("image fail"))};i.src=url})}
+function kenBurns(img,seconds,aspect){return new Promise(function(resolve,reject){var p=(aspect||"9:16").split(":");var arW=+p[0]||9,arH=+p[1]||16;var h=640,w=Math.round(h*arW/arH);if(w%2)w++;var c=document.createElement("canvas");c.width=w;c.height=h;var ctx=c.getContext("2d");var stream=c.captureStream(24);var mime=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":MediaRecorder.isTypeSupported("video/webm")?"video/webm":"";if(!mime){reject(new Error("no recorder"));return}var chunks=[];var rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:2500000});rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};rec.onstop=function(){var blob=new Blob(chunks,{type:mime});var r=new FileReader();r.onloadend=function(){resolve({blobUrl:URL.createObjectURL(blob),dataUrl:r.result})};r.readAsDataURL(blob)};var t0=performance.now(),dur=Math.max(4,Math.min(seconds||10,12))*1000;var s0=1,s1=1.15,px=(Math.random()-0.5)*0.08,py=(Math.random()-0.5)*0.08;function frame(now){var t=Math.min(1,(now-t0)/dur);var e=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;var sc=s0+(s1-s0)*e;var iw=img.naturalWidth,ih=img.naturalHeight,ir=iw/ih,cr=w/h,dw,dh;if(ir>cr){dh=h*sc;dw=dh*ir}else{dw=w*sc;dh=dw/ir}ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);ctx.drawImage(img,(w-dw)/2+px*e*w,(h-dh)/2+py*e*h,dw,dh);if(now-t0<dur)requestAnimationFrame(frame);else try{rec.stop()}catch(err){reject(err)}}rec.start(100);requestAnimationFrame(frame)})}
+async function freeGen(prompt,seconds,aspect,st){st=st||function(){};st("Free AI · generating image…");try{var p=(aspect||"9:16").split(":");var arW=+p[0]||9,arH=+p[1]||16;var ih=1024,iw=Math.round(ih*arW/arH);var img=await loadImg(pollUrl(prompt,iw,ih));st("Free AI · animating…");return await kenBurns(img,Math.min(seconds||10,12),aspect)}catch(e){st("Fallback animation…");return await kenBurns(await loadImg("https://image.pollinations.ai/prompt/"+encodeURIComponent("abstract purple gradient"),512,512),6,aspect)}}
+var LIB="frank_lib_v1";
+function loadLib(){try{return JSON.parse(localStorage.getItem(LIB)||"[]")}catch(e){return[]}}
+function saveLib(items){try{localStorage.setItem(LIB,JSON.stringify(items.slice(0,30)))}catch(e){}}
+var go=$("#go");if(go)go.addEventListener("click",async function(){if(state.busy)return;var raw=(pr&&pr.value||"").trim();if(!raw){showStat("Describe your idea first.",true);return}ensureGuest();state.busy=true;go.disabled=true;var result=$("#result");if(result)result.classList.remove("on");try{var prompt=enhance(raw,state.style);var out=await freeGen(prompt,state.duration,state.aspect,showStat);var vid=$("#result-vid");if(vid)vid.src=out.blobUrl;if(result)result.classList.add("on");var items=loadLib();items.unshift({id:"l_"+Date.now(),prompt:raw,duration:state.duration,dataUrl:out.dataUrl});saveLib(items);showStat("Free AI clip ready.",false,true);toast("Video ready")}catch(e){showStat(e.message||"Failed",true)}finally{state.busy=false;go.disabled=false}});
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&","<":"<",">":">",'"':""","'":"&#39;"}[c]})}
+function loadLibrary(){var empty=$("#lib-empty"),grid=$("#lib-grid");if(!empty||!grid)return;var local=loadLib();if(!local.length){empty.style.display="flex";grid.style.display="none";return}empty.style.display="none";grid.style.display="grid";grid.innerHTML=local.map(function(j){return '<div class="t-card"><div class="thumb"><video src="'+(j.dataUrl||'')+'" muted playsinline preload="metadata"></video><div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div><div class="meta"><div class="title">'+esc((j.prompt||"").slice(0,40))+'</div><div class="views">'+(j.duration||"?")+'s</div></div></div>'}).join("");grid.querySelectorAll(".t-card").forEach(function(card){card.addEventListener("click",function(){var v=card.querySelector("video");if(v){var rv=$("#result-vid");if(rv)rv.src=v.src;var res=$("#result");if(res)res.classList.add("on");showScreen("create")}})})}
+$$("#nav button[data-screen]").forEach(function(b){b.addEventListener("click",function(){showScreen(b.getAttribute("data-screen"))})});
+var cb=$("#create-back");if(cb)cb.addEventListener("click",function(){showScreen("explore")});
+var sb=$("#set-back");if(sb)sb.addEventListener("click",function(){showScreen("explore")});
+var lc=$("#lib-create");if(lc)lc.addEventListener("click",function(){showScreen("create")});
+var bp2=$("#btn-profile");if(bp2)bp2.addEventListener("click",function(){showScreen("settings")});
+var lp=$("#lib-profile");if(lp)lp.addEventListener("click",function(){showScreen("settings")});
+var sa=$("#set-about");if(sa)sa.addEventListener("click",function(){toast("frankgpt free — Pollinations image + local video. No server required.")});
+if(state.token){enterApp()}
 })();
