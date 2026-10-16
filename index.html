@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
-<meta name="description" content="FRANK — Turn ideas into videos">
-<title>FRANK</title>
+<meta name="description" content="FRANKGPT — Turn ideas into videos">
+<title>FRANKGPT</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
@@ -212,7 +212,7 @@ button{cursor:pointer}
       <h2>More</h2><p class="lead">Account, plans, and settings.</p>
       <div class="tier" style="margin-bottom:16px"><h3>Your plan</h3><p style="margin:0;color:var(--muted);font-size:13px" id="more-plan">Free · limited generations</p><button class="soft" type="button" id="btn-upgrade" style="margin-top:10px;width:100%">View plans</button></div>
       <div class="tier"><h3>Sign out</h3><button class="soft danger" type="button" id="btn-signout" style="margin-top:8px;width:100%">Sign out</button></div>
-      <div class="tier"><h3>Engine</h3><p style="margin:0;color:var(--muted);font-size:13px">Wan 2.7 via Puter (text + image → video).</p></div>
+      <div class="tier"><h3>Engine</h3><p style="margin:0;color:var(--muted);font-size:13px" id="engine-label">FRANKGPT · Wan 2.7</p></div>
     </div></section>
   </div>
   <nav class="nav" id="nav">
@@ -235,55 +235,364 @@ button{cursor:pointer}
 </div>
 
 <script type="module">
+import {
+  FRANKGPT,
+  frankgptGenerate,
+  friendlyError
+} from "./frankgpt-engine.js";
+
 const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
-const VERSION = "frank-2.0";
-const T2V = "wan-ai/wan2.7-t2v";
-const I2V = "wan-ai/wan2.7-i2v";
+const VERSION = FRANKGPT.version;
 const MASTER_CODE = "FRANK-MASTER-2026";
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
-const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-const dbp=new Promise((res,rej)=>{const r=indexedDB.open("frank-v2",1);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("v"))d.createObjectStore("v",{keyPath:"id"});if(!d.objectStoreNames.contains("explore"))d.createObjectStore("explore",{keyPath:"id"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-const tx=async(store,mode,fn)=>{const d=await dbp;return new Promise((res,rej)=>{const t=d.transaction(store,mode);const q=fn(t.objectStore(store));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
+const LS={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},
+  set(k,v){localStorage.setItem(k,JSON.stringify(v))}
+};
+const dbp=new Promise((res,rej)=>{
+  const r=indexedDB.open("frank-v2",1);
+  r.onupgradeneeded=()=>{
+    const d=r.result;
+    if(!d.objectStoreNames.contains("v"))d.createObjectStore("v",{keyPath:"id"});
+    if(!d.objectStoreNames.contains("explore"))d.createObjectStore("explore",{keyPath:"id"});
+  };
+  r.onsuccess=()=>res(r.result);
+  r.onerror=()=>rej(r.error);
+});
+const tx=async(store,mode,fn)=>{
+  const d=await dbp;
+  return new Promise((res,rej)=>{
+    const t=d.transaction(store,mode);
+    const q=fn(t.objectStore(store));
+    t.oncomplete=()=>res(q&&q.result);
+    t.onerror=()=>rej(t.error);
+  });
+};
 const idbPut=(s,o)=>tx(s,"readwrite",st=>st.put(o));
 const idbAll=async s=>(await tx(s,"readonly",st=>st.getAll())||[]).sort((a,b)=>(b.ts||0)-(a.ts||0));
 const idbDel=(s,id)=>tx(s,"readwrite",st=>st.delete(id));
+
 function getUser(){return LS.get("frank_user",null)}
 function setUser(u){LS.set("frank_user",u)}
-function getPlan(){const u=getUser();if(!u)return"free";if(u.master||u.plan==="platinum")return"platinum";return u.plan||"free"}
-function updatePlanUI(){const p=getPlan();$("#plan-label").textContent=p==="free"?"Free plan":p.charAt(0).toUpperCase()+p.slice(1);$("#more-plan").textContent=p==="platinum"?"Platinum · Unlimited":p==="premium"?"Premium":p==="plus"?"Plus":"Free · limited"}
-(function(){const params=new URLSearchParams(location.search);if(params.get("master")===MASTER_CODE)LS.set("frank_master_pending",true)})();
-window.onGoogleSignIn=function(resp){try{const payload=JSON.parse(atob(resp.credential.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"));const user={sub:payload.sub,name:payload.name||payload.email,email:payload.email,picture:payload.picture||"",plan:LS.get("frank_master_pending")?"platinum":(getUser()?.plan||"free"),master:!!LS.get("frank_master_pending"),ts:Date.now()};if(LS.get("frank_master_pending")){LS.set("frank_master_pending",false);user.plan="platinum";user.master=true}setUser(user);enterApp()}catch(e){console.error(e);alert("Sign-in failed. Check Google Client ID.")}};
-function enterApp(){const u=getUser();if(!u){$("#gate").classList.remove("hidden");$("#app").style.display="none";return}$("#gate").classList.add("hidden");$("#app").style.display="flex";updatePlanUI();if(u.picture)$("#btn-avatar").innerHTML=`<img src="${u.picture}" alt="">`;renderRecent();if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{})}
-$("#btn-signout").onclick=()=>{setUser(null);location.href=location.pathname};
-$("#dev-skip").onclick=()=>{setUser({sub:"dev",name:"Dev User",email:"dev@local",picture:"",plan:LS.get("frank_master_pending")?"platinum":"free",master:!!LS.get("frank_master_pending"),ts:Date.now()});if(LS.get("frank_master_pending"))LS.set("frank_master_pending",false);enterApp()};
-function nav(n){$$(".page").forEach(p=>p.classList.toggle("on",p.id==="p-"+n));$$("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.n===n));if(n==="lib")renderLib();if(n==="explore")renderExplore();if(n==="home")renderRecent();if(n==="more")updatePlanUI()}
-$$("#nav button").forEach(b=>b.onclick=()=>nav(b.dataset.n));$$("[data-nav]").forEach(b=>b.onclick=()=>nav(b.dataset.nav));
+function getPlan(){
+  const u=getUser();
+  if(!u)return "free";
+  if(u.master||u.plan==="platinum")return "platinum";
+  return u.plan||"free";
+}
+function updatePlanUI(){
+  const p=getPlan();
+  $("#plan-label").textContent=p==="free"?"Free plan":p.charAt(0).toUpperCase()+p.slice(1);
+  $("#more-plan").textContent=
+    p==="platinum"?"Platinum · Unlimited":
+    p==="premium"?"Premium":
+    p==="plus"?"Plus":"Free · limited";
+  const eng=$("#engine-label");
+  if(eng) eng.textContent=FRANKGPT.label;
+}
+
+(function(){
+  const params=new URLSearchParams(location.search);
+  if(params.get("master")===MASTER_CODE) LS.set("frank_master_pending",true);
+})();
+
+window.onGoogleSignIn=function(resp){
+  try{
+    const payload=JSON.parse(atob(resp.credential.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+    const user={
+      sub:payload.sub,
+      name:payload.name||payload.email,
+      email:payload.email,
+      picture:payload.picture||"",
+      plan:LS.get("frank_master_pending")?"platinum":(getUser()?.plan||"free"),
+      master:!!LS.get("frank_master_pending"),
+      ts:Date.now()
+    };
+    if(LS.get("frank_master_pending")){
+      LS.set("frank_master_pending",false);
+      user.plan="platinum";
+      user.master=true;
+    }
+    setUser(user);
+    enterApp();
+  }catch(e){
+    console.error(e);
+    alert("Sign-in failed. Check Google Client ID.");
+  }
+};
+
+function enterApp(){
+  const u=getUser();
+  if(!u){ $("#gate").classList.remove("hidden"); $("#app").style.display="none"; return; }
+  $("#gate").classList.add("hidden");
+  $("#app").style.display="flex";
+  updatePlanUI();
+  if(u.picture) $("#btn-avatar").innerHTML=`<img src="${u.picture}" alt="">`;
+  renderRecent();
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+}
+
+$("#btn-signout").onclick=()=>{ setUser(null); location.href=location.pathname; };
+$("#dev-skip").onclick=()=>{
+  setUser({
+    sub:"dev",
+    name:"Dev User",
+    email:"dev@local",
+    picture:"",
+    plan:LS.get("frank_master_pending")?"platinum":"free",
+    master:!!LS.get("frank_master_pending"),
+    ts:Date.now()
+  });
+  if(LS.get("frank_master_pending")) LS.set("frank_master_pending",false);
+  enterApp();
+};
+
+function nav(n){
+  $$(".page").forEach(p=>p.classList.toggle("on",p.id==="p-"+n));
+  $$("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.n===n));
+  if(n==="lib") renderLib();
+  if(n==="explore") renderExplore();
+  if(n==="home") renderRecent();
+  if(n==="more") updatePlanUI();
+}
+$$("#nav button").forEach(b=>b.onclick=()=>nav(b.dataset.n));
+$$("[data-nav]").forEach(b=>b.onclick=()=>nav(b.dataset.nav));
+
 let ref=null;
-function showRef(){const box=$("#refs-preview");if(!ref){box.style.display="none";box.innerHTML="";return}box.style.display="block";box.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><img src="${ref.url}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid var(--line)"><span style="font-size:12px;color:var(--muted)">Reference ready</span><button type="button" id="ref-x" style="margin-left:auto;padding:6px 10px;border-radius:8px;border:1px solid var(--line);font-size:12px">Remove</button></div>`;$("#ref-x").onclick=()=>{URL.revokeObjectURL(ref.url);ref=null;showRef()}}
-async function pickRef(file){if(!file||!/^image\//i.test(file.type))return;if(file.size>8e6){stat("Image max 8MB",true);return}if(ref)URL.revokeObjectURL(ref.url);const url=URL.createObjectURL(file);const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});ref={url,dataUrl,blob:file};showRef()}
-$("#btn-ref").onclick=()=>$("#ref-in").click();$("#btn-ref2").onclick=()=>$("#ref-in").click();$("#ref-in").onchange=e=>{const f=e.target.files?.[0];e.target.value="";pickRef(f)};
-const SURPRISES=["A neon jellyfish orchestra under the aurora, cinematic lighting","Tiny astronauts skateboarding Saturn's rings, whimsical","A raccoon in a sharp suit conducting an orchestra of penguins, cinematic comedy","Cyberpunk rainy night market, steam and neon reflections"];
-$("#btn-surprise").onclick=()=>{$("#prompt").value=SURPRISES[Math.floor(Math.random()*SURPRISES.length)];$("#prompt").focus()};
-$$(".qi").forEach(b=>b.onclick=()=>{if(b.dataset.needRef&&!ref){stat("Add a reference photo first.",true);$("#ref-in").click();return}$("#prompt").value=b.dataset.p;$("#prompt").focus()});
-$("#btn-style").onclick=()=>{const t=$("#prompt");t.value=(t.value+" cinematic style, photoreal").trim();t.focus()};
-$("#btn-mood").onclick=()=>{const t=$("#prompt");t.value=(t.value+" moody atmosphere, emotional lighting").trim();t.focus()};
-let busy=false,lastBlob=null,abort=false,tick=null;
-const stat=(t,err,ok)=>{const s=$("#stat");s.className="status on"+(err?" err":ok?" ok":"");s.textContent=t};
-function enhance(raw,hasImg){let p=(raw||"").trim();if(!p)p=hasImg?"Animate this image with natural continuous motion, cinematic lighting":"";if(!p)return p;const low=p.toLowerCase();const bits=[];if(!/cinematic|photoreal|film|realistic/i.test(low))bits.push("photorealistic cinematic video");if(!/camera|drone|orbit|handheld|shot|pan/i.test(low))bits.push("smooth continuous camera motion");if(!/no text|watermark/i.test(low))bits.push("no on-screen text, no watermark");if(bits.length)p=bits.join(", ")+". "+p;return p.slice(0,1200)}
-async function authPuter(){if(typeof puter==="undefined")throw new Error("Puter failed to load");try{if(puter.auth?.isSignedIn&&await puter.auth.isSignedIn())return}catch(_){}if(puter.auth?.signIn){stat("Sign in to Puter for generation…");await puter.auth.signIn({attempt_temp_user_creation:true})}}
-async function toBlob(result){if(result instanceof HTMLVideoElement){const src=result.src||result.currentSrc;if(!src)throw new Error("Empty video");const r=await fetch(src);const b=await r.blob();if(!b.size)throw new Error("Empty download");return b.type?b:new Blob([b],{type:"video/mp4"})}if(result instanceof Blob){if(!result.size)throw new Error("Empty blob");return result}if(result&&typeof result==="object"){const u=result.src||result.url||result.video_url||result.href;if(typeof u==="string"){const r=await fetch(u);const b=await r.blob();return b.type?b:new Blob([b],{type:"video/mp4"})}}if(typeof result==="string"&&/^https?:/i.test(result)){const r=await fetch(result);const b=await r.blob();return b.type?b:new Blob([b],{type:"video/mp4"})}throw new Error("No video returned")}
-function withTimeout(p,ms,label){let to;const t=new Promise((_,rej)=>{to=setTimeout(()=>rej(new Error((label||"Request")+" timed out")),ms)});return Promise.race([p,t]).finally(()=>clearTimeout(to))}
-function friendly(e){const m=String(e?.message||e||"");const code=e?.code||"";if(code==="insufficient_funds"||/insufficient/i.test(m))return "Not enough Puter credits.\nAdd credits at puter.com.";if(/model not found/i.test(m))return "Model unavailable. Reload.";if(/timed out/i.test(m))return "Timed out. Try again.";if(/cancelled/i.test(m))return "Cancelled.";return m.slice(0,260)}
-async function generate(){if(busy)return;const raw=$("#prompt").value.trim();if(!raw&&!ref){stat("Add a prompt or photo first.",true);return}const lockedPrompt=enhance(raw,!!ref);busy=true;abort=false;$("#go").disabled=true;$("#go").classList.add("busy");$("#result").classList.remove("on");$("#btn-cancel").style.display="inline-flex";try{await authPuter();if(abort)throw new Error("Cancelled");const sec=10;const model=ref?I2V:T2V;const opts={prompt:lockedPrompt,model,seconds:sec,size:"720x1280"};if(ref)opts.input_reference=ref.dataUrl;const t0=Date.now();stat("FRANK · "+sec+"s · Generating… 0s");clearInterval(tick);tick=setInterval(()=>{if(!abort)stat("FRANK · "+sec+"s locked\nGenerating… "+Math.round((Date.now()-t0)/1000)+"s")},1000);const result=await withTimeout(puter.ai.txt2vid(opts),600000,"FRANK");clearInterval(tick);if(abort)throw new Error("Cancelled");const blob=await toBlob(result);const id=Date.now()+"-"+Math.random().toString(36).slice(2,8);const meta={id,prompt:lockedPrompt,ts:Date.now(),totalSec:sec,model,user:getUser()?.email||""};const buf=await blob.arrayBuffer();await idbPut("v",{...meta,mime:blob.type||"video/mp4",data:buf});lastBlob=blob;const v=$("#vid");v.src=URL.createObjectURL(blob);$("#result").classList.add("on");stat("Saved · FRANK · "+VERSION,false,true);renderRecent()}catch(e){clearInterval(tick);stat("Failed.\n"+friendly(e),true)}finally{busy=false;abort=false;$("#go").disabled=false;$("#go").classList.remove("busy");$("#btn-cancel").style.display="none"}}
-$("#go").onclick=()=>generate();$("#btn-cancel").onclick=()=>{if(busy){abort=true;stat("Cancelling…",true)}};$("#btn-dl").onclick=()=>{if(!lastBlob)return;const a=document.createElement("a");a.href=URL.createObjectURL(lastBlob);a.download="frank-"+Date.now()+".mp4";a.click()};
-function blobOf(rec){return rec?.data?new Blob([rec.data],{type:rec.mime||"video/mp4"}):null}
-async function renderRecent(){const box=$("#recent");let items=[];try{items=await idbAll("v")}catch(_){}if(!items.length){box.innerHTML=`<div class="empty"><strong>No videos yet</strong>Your next idea starts here.</div>`;return}const row=document.createElement("div");row.className="recent-row";for(const it of items.slice(0,10)){const b=blobOf(it);if(!b)continue;const c=document.createElement("div");c.className="rc";c.innerHTML=`<video src="${URL.createObjectURL(b)}" muted playsinline></video><div class="dur">${it.totalSec||"?"}s</div><div class="cap"></div>`;c.querySelector(".cap").textContent=it.prompt||"Untitled";c.onclick=()=>nav("lib");row.append(c)}box.replaceChildren(row)}
-async function renderLib(){const box=$("#library");let items=[];try{items=await idbAll("v")}catch(e){box.innerHTML=`<div class="empty"><strong>Error</strong>${e.message}</div>`;return}if(!items.length){box.innerHTML=`<div class="empty"><strong>Empty</strong></div>`;return}box.innerHTML="";for(const it of items){const b=blobOf(it);if(!b)continue;const d=document.createElement("div");d.className="li";d.innerHTML=`<video src="${URL.createObjectURL(b)}" controls playsinline></video><div class="r"><p></p><button class="soft danger" type="button">Delete</button></div>`;d.querySelector("p").textContent=(it.prompt||"")+(it.totalSec?" · "+it.totalSec+"s":"");d.querySelector("button").onclick=async()=>{await idbDel("v",it.id);renderLib();renderRecent()};box.append(d)}}
-async function renderExplore(){const box=$("#explore");let items=[];try{items=await idbAll("explore")}catch(_){}if(!items.length){box.innerHTML=`<div class="empty"><strong>No public posts yet</strong>Share a video from Home to see it here.</div>`;return}box.innerHTML="";for(const it of items){const b=blobOf(it);if(!b)continue;const d=document.createElement("div");d.className="li";d.innerHTML=`<video src="${URL.createObjectURL(b)}" controls playsinline></video><div class="r"><p></p></div>`;d.querySelector("p").textContent=(it.who||"Creator")+" · "+(it.prompt||"");box.append(d)}}
-$("#btn-share").onclick=async()=>{if(!lastBlob){stat("Generate a video first.",true);return}const u=getUser();const id=Date.now()+"-pub";const buf=await lastBlob.arrayBuffer();await idbPut("explore",{id,prompt:$("#prompt").value||"Shared",ts:Date.now(),who:u?.name||"Anon",mime:"video/mp4",data:buf});stat("Shared to Explore.",false,true);nav("explore")};
-$("#btn-plan").onclick=()=>$("#plans-modal").classList.add("on");$("#btn-upgrade").onclick=()=>$("#plans-modal").classList.add("on");$("#plans-close").onclick=()=>$("#plans-modal").classList.remove("on");
-(function boot(){const u=getUser();if(u){enterApp();return}$("#gate").classList.remove("hidden")})();
+function showRef(){
+  const box=$("#refs-preview");
+  if(!ref){ box.style.display="none"; box.innerHTML=""; return; }
+  box.style.display="block";
+  box.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><img src="${ref.url}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid var(--line)"><span style="font-size:12px;color:var(--muted)">Reference ready</span><button type="button" id="ref-x" style="margin-left:auto;padding:6px 10px;border-radius:8px;border:1px solid var(--line);font-size:12px">Remove</button></div>`;
+  $("#ref-x").onclick=()=>{ URL.revokeObjectURL(ref.url); ref=null; showRef(); };
+}
+async function pickRef(file){
+  if(!file||!/^image\//i.test(file.type)) return;
+  if(file.size>8e6){ stat("Image max 8MB",true); return; }
+  if(ref) URL.revokeObjectURL(ref.url);
+  const url=URL.createObjectURL(file);
+  const dataUrl=await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+  ref={url,dataUrl,blob:file};
+  showRef();
+}
+$("#btn-ref").onclick=()=>$("#ref-in").click();
+$("#btn-ref2").onclick=()=>$("#ref-in").click();
+$("#ref-in").onchange=e=>{ const f=e.target.files?.[0]; e.target.value=""; pickRef(f); };
+
+const SURPRISES=[
+  "A neon jellyfish orchestra under the aurora, cinematic lighting",
+  "Tiny astronauts skateboarding Saturn's rings, whimsical",
+  "A raccoon in a sharp suit conducting an orchestra of penguins, cinematic comedy",
+  "Cyberpunk rainy night market, steam and neon reflections"
+];
+$("#btn-surprise").onclick=()=>{
+  $("#prompt").value=SURPRISES[Math.floor(Math.random()*SURPRISES.length)];
+  $("#prompt").focus();
+};
+$$(".qi").forEach(b=>b.onclick=()=>{
+  if(b.dataset.needRef&&!ref){
+    stat("Add a reference photo first.",true);
+    $("#ref-in").click();
+    return;
+  }
+  $("#prompt").value=b.dataset.p;
+  $("#prompt").focus();
+});
+$("#btn-style").onclick=()=>{
+  const t=$("#prompt");
+  t.value=(t.value+" cinematic style, photoreal").trim();
+  t.focus();
+};
+$("#btn-mood").onclick=()=>{
+  const t=$("#prompt");
+  t.value=(t.value+" moody atmosphere, emotional lighting").trim();
+  t.focus();
+};
+
+let busy=false, lastBlob=null, abort=false;
+const stat=(t,err,ok)=>{
+  const s=$("#stat");
+  s.className="status on"+(err?" err":ok?" ok":"");
+  s.textContent=t;
+};
+
+/** Generate via FRANKGPT engine only */
+async function generate(){
+  if(busy) return;
+  const raw=$("#prompt").value.trim();
+  if(!raw&&!ref){ stat("Add a prompt or photo first.",true); return; }
+
+  busy=true;
+  abort=false;
+  $("#go").disabled=true;
+  $("#go").classList.add("busy");
+  $("#result").classList.remove("on");
+  $("#btn-cancel").style.display="inline-flex";
+
+  try{
+    const { blob, meta } = await frankgptGenerate({
+      prompt: raw,
+      ar: "9:16",
+      seconds: 10,
+      refDataUrl: ref ? ref.dataUrl : null,
+      onStatus: (msg)=>stat(msg),
+      onTick: (s)=>stat("FRANKGPT · 10s locked\nGenerating… "+s+"s\nKeep this tab open.")
+    });
+
+    if(abort) throw new Error("Cancelled");
+
+    const id=Date.now()+"-"+Math.random().toString(36).slice(2,8);
+    const buf=await blob.arrayBuffer();
+    await idbPut("v",{
+      id,
+      prompt: meta.prompt,
+      ts: meta.ts,
+      totalSec: meta.seconds,
+      model: meta.model,
+      engine: meta.engine,
+      user: getUser()?.email||"",
+      mime: blob.type||"video/mp4",
+      data: buf
+    });
+
+    lastBlob=blob;
+    const v=$("#vid");
+    v.src=URL.createObjectURL(blob);
+    $("#result").classList.add("on");
+    stat("Saved · "+FRANKGPT.label+" · v"+VERSION, false, true);
+    renderRecent();
+  }catch(e){
+    if(!abort) stat("Failed.\n"+friendlyError(e), true);
+    else stat("Cancelled.", true);
+  }finally{
+    busy=false;
+    abort=false;
+    $("#go").disabled=false;
+    $("#go").classList.remove("busy");
+    $("#btn-cancel").style.display="none";
+  }
+}
+
+$("#go").onclick=()=>generate();
+$("#btn-cancel").onclick=()=>{
+  if(busy){ abort=true; stat("Cancelling…",true); }
+};
+$("#btn-dl").onclick=()=>{
+  if(!lastBlob) return;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(lastBlob);
+  a.download="frankgpt-"+Date.now()+".mp4";
+  a.click();
+};
+
+function blobOf(rec){
+  return rec?.data ? new Blob([rec.data],{type:rec.mime||"video/mp4"}) : null;
+}
+
+async function renderRecent(){
+  const box=$("#recent");
+  let items=[];
+  try{ items=await idbAll("v"); }catch(_){}
+  if(!items.length){
+    box.innerHTML=`<div class="empty"><strong>No videos yet</strong>Your next idea starts here.</div>`;
+    return;
+  }
+  const row=document.createElement("div");
+  row.className="recent-row";
+  for(const it of items.slice(0,10)){
+    const b=blobOf(it);
+    if(!b) continue;
+    const c=document.createElement("div");
+    c.className="rc";
+    c.innerHTML=`<video src="${URL.createObjectURL(b)}" muted playsinline></video><div class="dur">${it.totalSec||"?"}s</div><div class="cap"></div>`;
+    c.querySelector(".cap").textContent=it.prompt||"Untitled";
+    c.onclick=()=>nav("lib");
+    row.append(c);
+  }
+  box.replaceChildren(row);
+}
+
+async function renderLib(){
+  const box=$("#library");
+  let items=[];
+  try{ items=await idbAll("v"); }catch(e){
+    box.innerHTML=`<div class="empty"><strong>Error</strong>${e.message}</div>`;
+    return;
+  }
+  if(!items.length){
+    box.innerHTML=`<div class="empty"><strong>Empty</strong></div>`;
+    return;
+  }
+  box.innerHTML="";
+  for(const it of items){
+    const b=blobOf(it);
+    if(!b) continue;
+    const d=document.createElement("div");
+    d.className="li";
+    d.innerHTML=`<video src="${URL.createObjectURL(b)}" controls playsinline></video><div class="r"><p></p><button class="soft danger" type="button">Delete</button></div>`;
+    d.querySelector("p").textContent=
+      (it.prompt||"")+(it.totalSec?" · "+it.totalSec+"s":"")+(it.engine?" · "+it.engine:"");
+    d.querySelector("button").onclick=async()=>{
+      await idbDel("v",it.id);
+      renderLib();
+      renderRecent();
+    };
+    box.append(d);
+  }
+}
+
+async function renderExplore(){
+  const box=$("#explore");
+  let items=[];
+  try{ items=await idbAll("explore"); }catch(_){}
+  if(!items.length){
+    box.innerHTML=`<div class="empty"><strong>No public posts yet</strong>Share a video from Home to see it here.</div>`;
+    return;
+  }
+  box.innerHTML="";
+  for(const it of items){
+    const b=blobOf(it);
+    if(!b) continue;
+    const d=document.createElement("div");
+    d.className="li";
+    d.innerHTML=`<video src="${URL.createObjectURL(b)}" controls playsinline></video><div class="r"><p></p></div>`;
+    d.querySelector("p").textContent=(it.who||"Creator")+" · "+(it.prompt||"");
+    box.append(d);
+  }
+}
+
+$("#btn-share").onclick=async()=>{
+  if(!lastBlob){ stat("Generate a video first.",true); return; }
+  const u=getUser();
+  const id=Date.now()+"-pub";
+  const buf=await lastBlob.arrayBuffer();
+  await idbPut("explore",{
+    id,
+    prompt:$("#prompt").value||"Shared",
+    ts:Date.now(),
+    who:u?.name||"Anon",
+    mime:"video/mp4",
+    data:buf
+  });
+  stat("Shared to Explore.",false,true);
+  nav("explore");
+};
+
+$("#btn-plan").onclick=()=>$("#plans-modal").classList.add("on");
+$("#btn-upgrade").onclick=()=>$("#plans-modal").classList.add("on");
+$("#plans-close").onclick=()=>$("#plans-modal").classList.remove("on");
+
+(function boot(){
+  const u=getUser();
+  if(u){ enterApp(); return; }
+  $("#gate").classList.remove("hidden");
+})();
 </script>
 </body>
 </html>
