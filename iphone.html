@@ -4,203 +4,114 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000000">
-<title>FRANKGPT</title>
+<link rel="manifest" href="manifest.json">
+<title>FRANK</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://js.puter.com/v2/"></script>
 <style>
-:root{--bg:#000;--panel:#0c0c0e;--elev:#151518;--line:rgba(255,255,255,.09);--text:#f5f5f7;--muted:#8e8e93;--dim:#5c5c62;--g1:#a78bfa;--g2:#60a5fa;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--nav:calc(58px + var(--safe-b));--font:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+:root{--bg:#000;--panel:#0c0c0e;--elev:#151518;--line:rgba(255,255,255,.09);--text:#f5f5f7;--muted:#8e8e93;--dim:#5c5c62;--g1:#a78bfa;--g2:#60a5fa;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--nav:calc(58px + var(--safe-b));--font:Inter,-apple-system,system-ui,sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font);-webkit-text-size-adjust:100%}
-button,input,textarea,select{font:inherit;color:inherit;-webkit-appearance:none;appearance:none}
-button{cursor:pointer;border:0;background:none}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font)}
+button,input,textarea,select{font:inherit;color:inherit;-webkit-appearance:none;appearance:none;border:0;background:none}button{cursor:pointer}
 .app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:var(--safe-t)}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav)+16px)}
 .top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
-.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;letter-spacing:-.02em}
-.mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#c4b5fd,#60a5fa);display:grid;place-content:center;font-size:13px}
-.hero{padding:4px 20px 14px}
-.hero h1{margin:0;font-size:clamp(28px,8vw,38px);font-weight:800;letter-spacing:-.04em;line-height:1.1}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px}
+.mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#c4b5fd,#60a5fa);display:grid;place-content:center}
+.hero{padding:4px 20px 14px}.hero h1{margin:0;font-size:clamp(28px,8vw,38px);font-weight:800;line-height:1.1}
 .hero h1 span{background:linear-gradient(90deg,#c4b5fd,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p{margin:8px 0 0;color:var(--muted);font-size:14px}
 .badge{display:inline-flex;margin-top:10px;padding:4px 10px;border-radius:999px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);font-size:11px;font-weight:600;color:#d4c4ff}
 .box{margin:0 14px;padding:14px;border-radius:18px;background:linear-gradient(180deg,#121216,#0b0b0d);border:1px solid var(--line)}
-.row-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.label{font-size:12px;font-weight:600;color:var(--muted)}
-.btn-ref{padding:6px 11px;border-radius:10px;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);background:rgba(255,255,255,.03)}
-#prompt{width:100%;min-height:78px;border:0;background:transparent;resize:none;font-size:16px;line-height:1.4;outline:none;color:var(--text)}
-#prompt::placeholder{color:var(--dim)}
-.durs{display:flex;gap:6px;margin-top:10px}
-.dur{flex:1;padding:10px 0;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted)}
-.dur.on{background:rgba(167,139,250,.18);border-color:rgba(167,139,250,.45);color:#e9e0ff}
-.dur:disabled{opacity:.35}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.chip{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--muted)}
-.bot{display:flex;align-items:center;gap:10px;margin-top:12px}
-.hint{flex:1;font-size:11px;color:var(--dim);line-height:1.3}
-.go{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-content:center;flex-shrink:0;box-shadow:0 4px 20px rgba(96,165,250,.25)}
-.go:disabled{opacity:.4}
+.row-between{display:flex;justify-content:space-between;margin-bottom:6px}.label{font-size:12px;font-weight:600;color:var(--muted)}
+.btn-ref{padding:6px 11px;border-radius:10px;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line)}
+#prompt{width:100%;min-height:78px;border:0;background:transparent;resize:none;font-size:16px;outline:none}
+.durs{display:flex;gap:6px;margin-top:10px}.dur{flex:1;padding:10px 0;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted)}
+.dur.on{background:rgba(167,139,250,.18);border-color:rgba(167,139,250,.45);color:#e9e0ff}.dur:disabled{opacity:.35}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.chip{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+.bot{display:flex;align-items:center;gap:10px;margin-top:12px}.hint{flex:1;font-size:11px;color:var(--dim)}
+.go{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-content:center}.go:disabled{opacity:.4}
 .go .spin{width:20px;height:20px;border:2.5px solid #fff;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;display:none}
 .go.busy .spin{display:block}.go.busy .arr{display:none}@keyframes sp{to{transform:rotate(360deg)}}
 .refs{display:none;gap:8px;margin-top:10px}.refs.on{display:flex}
 .thumb{position:relative;width:64px;height:64px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
-.thumb img{width:100%;height:100%;object-fit:cover}
-.thumb button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;font-size:12px}
+.thumb img{width:100%;height:100%;object-fit:cover}.thumb button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff}
 .status{margin:12px 14px 0;padding:12px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:13px;color:var(--muted);white-space:pre-wrap;display:none;font-family:ui-monospace,Menlo,monospace}
-.status.on{display:block}
-.status.err{border-color:rgba(248,113,113,.35);color:#fecaca;background:rgba(248,113,113,.08)}
+.status.on{display:block}.status.err{border-color:rgba(248,113,113,.35);color:#fecaca;background:rgba(248,113,113,.08)}
 .status.ok{border-color:rgba(52,211,153,.35);color:#a7f3d0;background:rgba(52,211,153,.08)}
-.result{margin:12px 14px 0;display:none}.result.on{display:block}
-.result video{width:100%;border-radius:16px;background:#000;max-height:55vh;object-fit:contain}
+.result{margin:12px 14px 0;display:none}.result.on{display:block}.result video{width:100%;border-radius:16px;background:#000;max-height:55vh}
 .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .soft{padding:11px 14px;border-radius:12px;background:var(--elev);border:1px solid var(--line);font-size:13px;font-weight:600}
-.soft.danger{color:#f87171}
-.sec{padding:22px 14px 0}
-.sec-t{font-size:14px;font-weight:600;margin-bottom:10px}
-.empty{padding:22px 14px;border-radius:14px;border:1px dashed var(--line);text-align:center;color:var(--muted);font-size:13px}
-.empty strong{display:block;color:var(--text);margin-bottom:4px;font-size:14px}
-.recent{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
-.rc{flex:0 0 132px;border-radius:12px;overflow:hidden;background:var(--elev);border:1px solid var(--line)}
-.rc video{width:100%;aspect-ratio:9/12;object-fit:cover;background:#111}
-.rc .m{padding:6px 8px;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.page{display:none}.page.on{display:block}
-.pad{padding:8px 16px 24px;max-width:560px;margin:0 auto}
-.pad h2{margin:0 0 4px;font-size:24px;font-weight:800;letter-spacing:-.03em}
-.pad .lead{margin:0 0 14px;color:var(--muted);font-size:13px}
-.lib{display:grid;gap:12px}
-.li{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
-.li video{width:100%;aspect-ratio:16/10;object-fit:cover;background:#000}
-.li .r{padding:10px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
-.li .r p{margin:0;font-size:12px;color:var(--muted);flex:1}
+.soft.danger{color:#f87171}.soft.primary{background:linear-gradient(135deg,rgba(167,139,250,.25),rgba(96,165,250,.2));border-color:rgba(167,139,250,.4)}
+.sec{padding:22px 14px 0}.sec-t{font-size:14px;font-weight:600;margin-bottom:10px}
+.empty{padding:22px 14px;border-radius:14px;border:1px dashed var(--line);text-align:center;color:var(--muted);font-size:13px}.empty strong{display:block;color:var(--text);margin-bottom:4px}
+.recent{display:flex;gap:10px;overflow-x:auto}.rc{flex:0 0 132px;border-radius:12px;overflow:hidden;background:var(--elev);border:1px solid var(--line)}
+.rc video{width:100%;aspect-ratio:9/12;object-fit:cover}.rc .m{padding:6px 8px;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.page{display:none}.page.on{display:block}.pad{padding:8px 16px 24px;max-width:560px;margin:0 auto}
+.pad h2{margin:0 0 4px;font-size:24px;font-weight:800}.pad .lead{margin:0 0 14px;color:var(--muted);font-size:13px}
+.lib{display:grid;gap:12px}.li{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+.li video{width:100%;aspect-ratio:16/10;object-fit:cover;background:#000}.li .r{padding:10px;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}.li .r p{margin:0;font-size:12px;color:var(--muted);flex:1}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-.card label{display:grid;gap:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
-.card select,.card input{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;width:100%;font-size:15px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text)}
-.card .h{font-size:12px;color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0;margin-top:6px}
-.nav{position:fixed;left:0;right:0;bottom:0;padding:4px 0 var(--safe-b);background:rgba(8,8,10,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--line);display:flex;z-index:30}
-.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;color:var(--dim);font-size:10px;font-weight:600}
-.nav button.on{color:var(--text)}
+.card label{display:grid;gap:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.card select,.card input{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;width:100%;font-size:15px;font-weight:400;text-transform:none;color:var(--text)}
+.card .h{font-size:12px;color:var(--dim);font-weight:400;text-transform:none;margin-top:6px}
+.nav{position:fixed;left:0;right:0;bottom:0;padding:4px 0 var(--safe-b);background:rgba(8,8,10,.94);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:flex;z-index:30}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;color:var(--dim);font-size:10px;font-weight:600}.nav button.on{color:var(--text)}
 .lock{font-size:11px;color:var(--dim);margin-top:8px;display:none}.lock.on{display:block}
+.explore-grid{display:grid;gap:14px}.ex{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+.ex video{width:100%;aspect-ratio:16/10;object-fit:cover;background:#000}.ex .body{padding:12px}.ex .who{font-size:13px;font-weight:600}.ex .cap{font-size:12px;color:var(--muted);margin-top:4px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;display:none;align-items:flex-end;justify-content:center}.modal-bg.on{display:flex}
+.modal{width:100%;max-width:480px;background:#121216;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + var(--safe-b));border:1px solid var(--line)}
+.modal h3{margin:0 0 8px}.modal p{margin:0 0 12px;color:var(--muted);font-size:13px}
+.modal input,.modal textarea{width:100%;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:12px;margin-bottom:10px;font-size:15px}
+.modal textarea{min-height:70px}.modal .row{display:flex;gap:8px}.modal .row button{flex:1;padding:12px;border-radius:12px;font-weight:600}
+.modal .ok{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff}.modal .no{background:var(--elev);border:1px solid var(--line)}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="scroll">
-    <section class="page on" id="p-home">
-      <header class="top">
-        <div class="brand"><div class="mark">✦</div> FRANKGPT</div>
-        <button type="button" class="soft" id="btn-set" style="padding:8px 12px;font-size:12px">Settings</button>
-      </header>
-      <div class="hero">
-        <h1>Turn ideas into<br><span>videos.</span></h1>
-        <p>Type a prompt. Optional photo. Generate on your iPhone.</p>
-        <div class="badge">FRANKGPT · Wan 2.7 · iPhone ready</div>
-      </div>
-      <div class="box">
-        <div class="row-between">
-          <div class="label">✦ Your prompt</div>
-          <button class="btn-ref" type="button" id="btn-ref">📷 Photo</button>
-          <input type="file" id="ref-in" accept="image/*" capture="environment" hidden>
-        </div>
-        <textarea id="prompt" placeholder="A cinematic drone shot over misty mountains at sunrise…" rows="3"></textarea>
-        <div class="refs" id="refs"></div>
-        <div class="durs" role="group" aria-label="Length">
-          <button type="button" class="dur" data-s="5">5s</button>
-          <button type="button" class="dur on" data-s="10">10s</button>
-          <button type="button" class="dur" data-s="15">15s</button>
-        </div>
-        <p class="lock" id="lock">Length locked while generating</p>
-        <div class="chips">
-          <button type="button" class="chip" data-p="Cinematic outdoor adventure through misty mountains at sunrise, sweeping drone shot, natural light">Outdoor</button>
-          <button type="button" class="chip" data-p="Clean product demo of a modern gadget on a desk, soft studio lighting, slow orbit camera">Product</button>
-          <button type="button" class="chip" data-p="Funny skit: two friends arguing about the last slice of pizza, exaggerated expressions">Funny</button>
-        </div>
-        <div class="bot">
-          <div class="hint" id="hint">Vertical · photoreal · audio when available</div>
-          <button class="go" type="button" id="go" aria-label="Generate"><span class="spin"></span><span class="arr">→</span></button>
-        </div>
-      </div>
-      <div class="status" id="stat" role="status"></div>
-      <div class="result" id="result">
-        <video id="vid" controls playsinline webkit-playsinline></video>
-        <div class="actions">
-          <button class="soft" type="button" id="btn-dl">Download</button>
-          <button class="soft danger" type="button" id="btn-cancel" style="display:none">Cancel</button>
-        </div>
-      </div>
-      <div class="sec">
-        <div class="sec-t">⏱ Recent</div>
-        <div id="recent"></div>
-      </div>
-    </section>
-    <section class="page" id="p-lib"><div class="pad"><h2>Library</h2><p class="lead">Saved on this iPhone only.</p><div class="lib" id="library"></div></div></section>
-    <section class="page" id="p-set"><div class="pad">
-      <h2>Settings</h2>
-      <p class="lead">Works in Safari. Sign in to Puter once — you pay for your own generations. No API keys to paste.</p>
-      <div class="card">
-        <label>Default length<select id="set-dur"><option value="5">5 seconds</option><option value="10" selected>10 seconds</option><option value="15">15 seconds (max)</option></select></label>
-        <label>Format<select id="set-ar"><option value="9:16" selected>Vertical (Reels / Stories)</option><option value="16:9">Wide</option><option value="1:1">Square</option></select></label>
-        <p class="h">Length locks when you tap Generate.</p>
-      </div>
-      <button class="soft" type="button" id="btn-signin" style="width:100%;margin-bottom:8px">Sign in to Puter</button>
-      <button class="soft" type="button" id="btn-test" style="width:100%;margin-bottom:8px">Free sample clip (no credits)</button>
-      <button class="soft danger" type="button" id="btn-wipe" style="width:100%">Erase all videos</button>
-      <div class="status" id="set-msg" style="margin-top:12px"></div>
-    </div></section>
-  </div>
-  <nav class="nav" id="nav">
-    <button type="button" data-n="home" class="on">🏠<br>Home</button>
-    <button type="button" data-n="lib">▦<br>Library</button>
-    <button type="button" data-n="set">⚙<br>Settings</button>
-  </nav>
+<div class="app"><div class="scroll">
+<section class="page on" id="p-home">
+<header class="top"><div class="brand"><div class="mark">✦</div> FRANK</div><button type="button" class="soft" id="btn-set" style="padding:8px 12px;font-size:12px">Settings</button></header>
+<div class="hero"><h1>Turn ideas into<br><span>videos.</span></h1><p>Same on web & Android.</p><div class="badge">FRANK · Wan 2.7 · Shared Explore</div></div>
+<div class="box">
+<div class="row-between"><div class="label">✦ Your prompt</div><button class="btn-ref" type="button" id="btn-ref">📷 Photo</button><input type="file" id="ref-in" accept="image/*" capture="environment" hidden></div>
+<textarea id="prompt" placeholder="Describe your video…" rows="3"></textarea>
+<div class="refs" id="refs"></div>
+<div class="durs"><button type="button" class="dur" data-s="5">5s</button><button type="button" class="dur on" data-s="10">10s</button><button type="button" class="dur" data-s="15">15s</button></div>
+<p class="lock" id="lock">Length locked while generating</p>
+<div class="chips"><button type="button" class="chip" data-p="Cinematic outdoor adventure at sunrise">Outdoor</button><button type="button" class="chip" data-p="Product demo soft studio lighting">Product</button><button type="button" class="chip" data-p="Funny skit last slice of pizza">Funny</button></div>
+<div class="bot"><div class="hint">Web + APK share Explore</div><button class="go" type="button" id="go"><span class="spin"></span><span class="arr">→</span></button></div>
 </div>
-<script type="module">
-const $=s=>document.querySelector(s);
-const $$=s=>[...document.querySelectorAll(s)];
-const VERSION="frankgpt-1.0";
-const T2V="wan-ai/wan2.7-t2v";
-const I2V="wan-ai/wan2.7-i2v";
-const dbp=new Promise((res,rej)=>{const r=indexedDB.open("frank-iphone",1);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("v"))d.createObjectStore("v",{keyPath:"id"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-const tx=async(m,f)=>{const d=await dbp;return new Promise((res,rej)=>{const t=d.transaction("v",m);const q=f(t.objectStore("v"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
-const idbPut=o=>tx("readwrite",s=>s.put(o));
-const idbAll=async()=>(await tx("readonly",s=>s.getAll())||[]).sort((a,b)=>b.ts-a.ts);
-const idbDel=id=>tx("readwrite",s=>s.delete(id));
-async function saveVid(meta,blob){if(!blob?.size)throw new Error("Empty video");const buf=await blob.arrayBuffer();if(!buf.byteLength)throw new Error("Empty buffer");await idbPut({...meta,mime:blob.type||"video/mp4",data:buf});const ok=await tx("readonly",s=>s.get(meta.id));if(!ok?.data)throw new Error("Save failed")}
-function blobOf(rec){return rec?.data?new Blob([rec.data],{type:rec.mime||"video/mp4"}):null}
-const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-function loadSet(){const d=LS.get("fd",10);$("#set-dur").value=String(d);$("#set-ar").value=LS.get("fa","9:16");syncDur(d)}
-function saveSet(){LS.set("fd",+$("#set-dur").value);LS.set("fa",$("#set-ar").value);syncDur(+$("#set-dur").value)}
-["set-dur","set-ar"].forEach(id=>{const el=$("#"+id);if(el)el.addEventListener("change",saveSet)});
-function syncDur(s){$$(".dur").forEach(b=>b.classList.toggle("on",+b.dataset.s===+s))}
-$$(".dur").forEach(b=>{b.onclick=()=>{if(busy)return;const s=+b.dataset.s;LS.set("fd",s);$("#set-dur").value=String(s);syncDur(s)}});
-function nav(n){$$(".page").forEach(p=>p.classList.toggle("on",p.id==="p-"+n));$$("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.n===n));if(n==="lib")renderLib();if(n==="home")renderRecent();if(n==="set")loadSet()}
-$$("#nav button").forEach(b=>b.onclick=()=>nav(b.dataset.n));
-$("#btn-set").onclick=()=>nav("set");
-let ref=null,busy=false,lastBlob=null,tick=null,abort=false;
-function renderRefs(){const box=$("#refs");if(!ref){box.classList.remove("on");box.innerHTML="";return}box.classList.add("on");box.innerHTML=`<div class="thumb"><img src="${ref.url}" alt=""><button type="button">×</button></div>`;box.querySelector("button").onclick=()=>{URL.revokeObjectURL(ref.url);ref=null;renderRefs()}}
-$("#btn-ref").onclick=()=>$("#ref-in").click();
-$("#ref-in").onchange=async e=>{const f=e.target.files?.[0];e.target.value="";if(!f||!/^image\//i.test(f.type))return;if(f.size>8e6){stat("Image max 8MB",true);return}if(ref)URL.revokeObjectURL(ref.url);const url=URL.createObjectURL(f);const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});ref={url,dataUrl,blob:f};renderRefs()};
-$$(".chip").forEach(b=>b.onclick=()=>{$("#prompt").value=b.dataset.p;$("#prompt").focus()});
-const stat=(t,err,ok)=>{const s=$("#stat");s.className="status on"+(err?" err":ok?" ok":"");s.textContent=t};
-const setMsg=(t,err,ok)=>{const s=$("#set-msg");s.className="status on"+(err?" err":ok?" ok":"");s.textContent=t};
-function lockUI(on){$$(".dur").forEach(b=>b.disabled=!!on);$("#set-dur").disabled=!!on;$("#lock").classList.toggle("on",!!on);$("#btn-cancel").style.display=on?"inline-flex":"none"}
-function sizeFor(ar){if(ar==="9:16")return "720x1280";if(ar==="1:1")return "720x720";return "1280x720"}
-function enhance(raw,hasImg){let p=(raw||"").trim();if(!p)p=hasImg?"Animate this image with natural continuous motion, cinematic lighting":"";if(!p)return p;const low=p.toLowerCase();const bits=[];if(!/cinematic|photoreal|film|realistic/i.test(low))bits.push("photorealistic cinematic video");if(!/camera|drone|orbit|handheld|shot|pan/i.test(low))bits.push("smooth continuous camera motion");if(!/no text|watermark/i.test(low))bits.push("no on-screen text, no watermark");if(bits.length)p=bits.join(", ")+". "+p;return p.slice(0,1200)}
-async function auth(){if(typeof puter==="undefined")throw new Error("Puter failed to load — check connection and reload");try{if(puter.auth?.isSignedIn&&await puter.auth.isSignedIn())return}catch(_){}if(puter.auth?.signIn){stat("Sign in to Puter…\nAllow the popup, then generation continues.");await puter.auth.signIn({attempt_temp_user_creation:true})}}
-async function toBlob(result){if(result instanceof HTMLVideoElement){const src=result.src||result.currentSrc;if(!src)throw new Error("Empty video element");const r=await fetch(src);const b=await r.blob();if(!b.size)throw new Error("Empty download");return b.type?b:new Blob([b],{type:"video/mp4"})}if(result instanceof Blob){if(!result.size)throw new Error("Empty blob");return result}if(result&&typeof result==="object"){const u=result.src||result.url||result.video_url||result.href;if(typeof u==="string"){const r=await fetch(u);const b=await r.blob();return b.type?b:new Blob([b],{type:"video/mp4"})}}if(typeof result==="string"&&/^https?:/i.test(result)){const r=await fetch(result);const b=await r.blob();return b.type?b:new Blob([b],{type:"video/mp4"})}throw new Error("No video returned")}
-function withTimeout(p,ms,label){let to;const t=new Promise((_,rej)=>{to=setTimeout(()=>rej(new Error((label||"Request")+" timed out after "+Math.round(ms/1000)+"s")),ms)});return Promise.race([p,t]).finally(()=>clearTimeout(to))}
-async function gen(prompt,ar,sec,refDataUrl,onTick){const seconds=Math.min(Math.max(Number(sec)||10,2),15);const model=refDataUrl?I2V:T2V;const opts={prompt,model,seconds,size:sizeFor(ar)};if(refDataUrl)opts.input_reference=refDataUrl;const t0=Date.now();if(onTick){onTick(0);clearInterval(tick);tick=setInterval(()=>onTick(Math.round((Date.now()-t0)/1000)),1000)}try{if(abort)throw new Error("Cancelled");const result=await withTimeout(puter.ai.txt2vid(opts),600000,"FRANKGPT");if(abort)throw new Error("Cancelled");return await toBlob(result)}finally{clearInterval(tick)}}
-function friendly(e){const m=String(e?.message||e||"");const code=e?.code||"";if(code==="insufficient_funds"||/insufficient/i.test(m))return "Not enough Puter credits.\nAdd credits at puter.com or try 5s.";if(code==="popup_blocked")return "Allow popups for Puter sign-in, then try again.";if(/model not found/i.test(m))return "Model unavailable. Reload and try again.";if(/timed out/i.test(m))return "Timed out. Try 5–10s on a strong connection.";if(/cancelled/i.test(m))return "Cancelled.";return m.slice(0,260)}
-async function generate(){if(busy)return;const raw=$("#prompt").value.trim();if(!raw&&!ref){stat("Add a prompt or photo first.",true);return}const lockedSec=LS.get("fd",10);const lockedAr=LS.get("fa","9:16");const lockedPrompt=enhance(raw,!!ref);busy=true;abort=false;$("#go").disabled=true;$("#go").classList.add("busy");$("#result").classList.remove("on");lockUI(true);try{await auth();if(abort)throw new Error("Cancelled");stat("FRANKGPT · "+lockedSec+"s · Generating… 0s");const blob=await gen(lockedPrompt,lockedAr,lockedSec,ref?.dataUrl||null,sec=>{if(!abort)stat("FRANKGPT · "+lockedSec+"s locked\nGenerating… "+sec+"s\nKeep Safari open.")});const id=Date.now()+"-"+Math.random().toString(36).slice(2,8);const meta={id,prompt:lockedPrompt,ts:Date.now(),totalSec:Math.min(lockedSec,15),ar:lockedAr,model:ref?I2V:T2V};await saveVid(meta,blob);lastBlob=blob;const v=$("#vid");v.src=URL.createObjectURL(blob);$("#result").classList.add("on");stat("Saved · FRANKGPT · "+VERSION,false,true);renderRecent()}catch(e){stat("Failed.\n"+friendly(e),true)}finally{busy=false;abort=false;$("#go").disabled=false;$("#go").classList.remove("busy");lockUI(false)}}
-$("#go").onclick=()=>generate();
-$("#btn-cancel").onclick=()=>{if(busy){abort=true;stat("Cancelling…",true)}};
-$("#btn-dl").onclick=()=>{if(!lastBlob)return;const a=document.createElement("a");a.href=URL.createObjectURL(lastBlob);a.download="frankgpt-"+Date.now()+".mp4";a.click()};
-async function renderRecent(){const box=$("#recent");let items=[];try{items=await idbAll()}catch(_){}if(!items.length){box.innerHTML=`<div class="empty"><strong>No videos yet</strong>Your next idea starts here.</div>`;return}const row=document.createElement("div");row.className="recent";for(const it of items.slice(0,10)){const b=blobOf(it);if(!b)continue;const c=document.createElement("div");c.className="rc";c.innerHTML=`<video src="${URL.createObjectURL(b)}" muted playsinline webkit-playsinline></video><div class="m"></div>`;c.querySelector(".m").textContent=it.prompt||"Untitled";c.onclick=()=>nav("lib");row.append(c)}box.replaceChildren(row)}
-async function renderLib(){const box=$("#library");let items=[];try{items=await idbAll()}catch(e){box.innerHTML=`<div class="empty"><strong>Error</strong>${e.message}</div>`;return}if(!items.length){box.innerHTML=`<div class="empty"><strong>Empty</strong></div>`;return}box.innerHTML="";for(const it of items){const b=blobOf(it);if(!b)continue;const d=document.createElement("div");d.className="li";d.innerHTML=`<video src="${URL.createObjectURL(b)}" controls playsinline webkit-playsinline></video><div class="r"><p></p><button class="soft danger" type="button">Delete</button></div>`;d.querySelector("p").textContent=(it.prompt||"")+(it.totalSec?" · "+it.totalSec+"s":"");d.querySelector("button").onclick=async()=>{await idbDel(it.id);renderLib();renderRecent()};box.append(d)}}
-$("#btn-signin").onclick=async()=>{try{await auth();setMsg("Signed in.",false,true)}catch(e){setMsg(friendly(e),true)}};
-$("#btn-test").onclick=async()=>{try{setMsg("Loading free sample…");await auth();const v=await withTimeout(puter.ai.txt2vid("A single orange on a black table",true),45000,"Sample");setMsg("Sample OK · "+VERSION+"\nReal generates use credits.",false,true);if(v instanceof HTMLVideoElement){v.controls=true;v.playsInline=true;v.style.width="100%";v.style.marginTop="8px";v.style.borderRadius="12px";$("#set-msg").after(v)}}catch(e){setMsg(friendly(e),true)}};
-$("#btn-wipe").onclick=async()=>{if(!confirm("Erase all videos on this iPhone?"))return;for(const i of await idbAll())await idbDel(i.id);renderLib();renderRecent();setMsg("Cleared.",false,true)};
-loadSet();renderRecent();
-</script>
-</body>
-</html>
+<div class="status" id="stat"></div>
+<div class="result" id="result"><video id="vid" controls playsinline webkit-playsinline></video><div class="actions"><button class="soft primary" type="button" id="btn-pub">Share to Explore</button><button class="soft" type="button" id="btn-dl">Download</button><button class="soft danger" type="button" id="btn-cancel" style="display:none">Cancel</button></div></div>
+<div class="sec"><div class="sec-t">⏱ Recent</div><div id="recent"></div></div>
+</section>
+<section class="page" id="p-lib"><div class="pad"><h2>Library</h2><p class="lead">Private on this device.</p><div class="lib" id="library"></div></div></section>
+<section class="page" id="p-explore"><div class="pad"><h2>Explore</h2><p class="lead">Public feed — web + app. No Supabase.</p><div id="explore"></div></div></section>
+<section class="page" id="p-set"><div class="pad">
+<h2>Settings</h2><p class="lead">Same on website and APK.</p>
+<div class="card"><label>Display name<input id="set-name" placeholder="Creator name" maxlength="40"></label></div>
+<div class="card"><label>Length<select id="set-dur"><option value="5">5s</option><option value="10" selected>10s</option><option value="15">15s</option></select></label>
+<label>Format<select id="set-ar"><option value="9:16" selected>Vertical</option><option value="16:9">Wide</option><option value="1:1">Square</option></select></label></div>
+<div class="card"><label>Explore feed URL<input id="set-feed" placeholder="https://api.jsonbin.io/v3/b/…"></label>
+<label>Feed key (publish)<input id="set-feed-key" type="password" placeholder="JSONBin Master Key" autocomplete="off"></label>
+<p class="h">Create free bin at jsonbin.io with {"posts":[]}. Viewers need no key.</p></div>
+<button class="soft" type="button" id="btn-save" style="width:100%;margin-bottom:8px">Save</button>
+<button class="soft" type="button" id="btn-signin" style="width:100%;margin-bottom:8px">Sign in to Puter</button>
+<button class="soft" type="button" id="btn-test" style="width:100%;margin-bottom:8px">Free sample</button>
+<button class="soft danger" type="button" id="btn-wipe" style="width:100%">Erase library</button>
+<div class="status" id="set-msg" style="margin-top:12px"></div>
+</div></section>
+</div>
+<nav class="nav" id="nav">
+<button type="button" data-n="home" class="on">🏠<br>Home</button>
+<button type="button" data-n="lib">▦<br>Library</button>
+<button type="button" data-n="explore">◎<br>Explore</button>
+<button type="button" data-n="set">⚙<br>Settings</button>
+</nav></div>
+<div class="modal-bg" id="pub-modal"><div class="modal"><h3>Share to Explore</h3><p>Visible on web and app.</p>
+<input id="pub-name" placeholder="Your name" maxlength="40"><textarea id="pub-cap" placeholder="Caption"></textarea>
+<div class="row"><button class="no" type="button" id="pub-cancel">Cancel</button><button class="ok" type="button" id="pub-ok">Publish</button></div></div></div>
+<script type="module" src="./frank-app.js"></script>
+</body></html>
