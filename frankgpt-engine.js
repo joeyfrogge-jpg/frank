@@ -1,19 +1,26 @@
 /**
- * FRANKGPT Engine
- * Product brand: FRANKGPT
- * Backend: Puter.js (user-pays / free allowance) — Wan + Seedance-class models
- * Clip length: 10–30 seconds (provider may clamp if model max is lower)
- * No Supabase. Site stays on GitHub Pages.
+ * FRANKGPT Engine v1.3
+ * Puter.js — best + fastest models available on Puter
+ *
+ * Speed (10–15s):  Seedance 2.0 Fast  — optimized for lower latency
+ * Quality / long (16–30s): Seedance 2.5 — up to 30s, audio, top-tier
+ * I2V: Seedance 2.0 Fast with input_reference (falls back to Wan I2V)
+ *
+ * User-pays / free Puter quota. No API keys for app owner. No Supabase.
  */
 export const FRANKGPT = {
   name: "FRANKGPT",
-  version: "1.2",
-  // Default T2V / I2V — Puter routes these (free for app owner; user pays or uses free quota)
-  t2v: "wan-ai/wan2.7-t2v",
+  version: "1.3",
+  // Fastest on Puter (BytePlus) — 4–15s
+  fast: "dreamina-seedance-2-0-fast-260128",
+  // Best quality + longest (up to 30s) on Puter
+  best: "dreamina-seedance-2-5-260628",
+  // Fallbacks if an id is unavailable
+  fastAlt: "seedance-2-0-fast",
+  bestAlt: "seedance-2-5",
   i2v: "wan-ai/wan2.7-i2v",
-  // Longer clips: Seedance-class often supports up to ~15–30s when available on Puter
-  t2vLong: "byteplus/dreamina-seedance-2-0-260128",
-  label: "FRANKGPT · Puter",
+  i2vAlt: "dreamina-seedance-2-0-fast-260128",
+  label: "FRANKGPT · Seedance",
   minSeconds: 10,
   maxSeconds: 30,
   defaultSeconds: 10,
@@ -99,7 +106,7 @@ function withTimeout(p, ms, label) {
             (label || "Request") +
               " timed out after " +
               Math.round(ms / 1000) +
-              "s. Try again or use Test sample."
+              "s. Try 10s or Test sample."
           )
         ),
       ms
@@ -109,22 +116,34 @@ function withTimeout(p, ms, label) {
 }
 
 /**
- * Pick model: longer requests prefer Seedance-class when available on Puter.
+ * Fastest for short clips; best quality model for longer (up to 30s).
  */
 function pickModel(seconds, hasImage) {
-  if (hasImage) return FRANKGPT.i2v;
-  // Prefer long-capable model when user asks for more than 15s
-  if (seconds > 15 && FRANKGPT.t2vLong) return FRANKGPT.t2vLong;
-  return FRANKGPT.t2v;
+  if (hasImage) {
+    // Seedance Fast handles I2V via input_reference; Wan I2V as documented alt
+    return { primary: FRANKGPT.i2vAlt, fallback: FRANKGPT.i2v };
+  }
+  if (seconds > 15) {
+    // Seedance 2.5: 4–30s, best quality on Puter for long clips
+    return { primary: FRANKGPT.best, fallback: FRANKGPT.bestAlt };
+  }
+  // Seedance 2.0 Fast: lowest latency for 10–15s
+  return { primary: FRANKGPT.fast, fallback: FRANKGPT.fastAlt };
+}
+
+function isModelMissing(err) {
+  const m = String(err?.message || err || "");
+  const c = err?.code || err?.errorCode || "";
+  return /model not found|not found|deprecated|unknown model/i.test(m) || c === "model_not_found";
 }
 
 /**
  * @param {object} opts
  * @param {string} opts.prompt
  * @param {string} [opts.ar]
- * @param {number} [opts.seconds] - clamped to 10–30
+ * @param {number} [opts.seconds] - 10–30
  * @param {string|null} [opts.refDataUrl]
- * @param {boolean} [opts.testMode] - free instant sample (no credits)
+ * @param {boolean} [opts.testMode]
  * @param {function} [opts.onTick]
  * @param {function} [opts.onStatus]
  */
@@ -138,7 +157,7 @@ export async function frankgptGenerate({
   onStatus = null
 } = {}) {
   const sec = clampSeconds(seconds);
-  const model = pickModel(sec, !!refDataUrl);
+  const { primary, fallback } = pickModel(sec, !!refDataUrl);
   const size = FRANKGPT.sizes[ar] || FRANKGPT.sizes["9:16"];
   const enhanced = enhancePrompt(prompt, !!refDataUrl);
 
@@ -146,18 +165,23 @@ export async function frankgptGenerate({
     await ensureAuth(onStatus);
   }
 
-  const puterOpts = {
-    prompt: enhanced || "A simple cinematic test clip",
-    model,
-    seconds: sec,
-    duration: sec,
-    size
+  const buildOpts = (model) => {
+    const puterOpts = {
+      prompt: enhanced || "A simple cinematic test clip",
+      model,
+      seconds: sec,
+      duration: sec,
+      size,
+      // Seedance supports native audio on Puter
+      generate_audio: true
+    };
+    if (refDataUrl) puterOpts.input_reference = refDataUrl;
+    if (testMode) {
+      puterOpts.testMode = true;
+      puterOpts.test_mode = true;
+    }
+    return puterOpts;
   };
-  if (refDataUrl) puterOpts.input_reference = refDataUrl;
-  if (testMode) {
-    puterOpts.testMode = true;
-    puterOpts.test_mode = true;
-  }
 
   const started = Date.now();
   let tickTimer = null;
@@ -166,6 +190,9 @@ export async function frankgptGenerate({
     tickTimer = setInterval(() => onTick(Math.round((Date.now() - started) / 1000)), 1000);
   }
 
+  const modelLabel =
+    sec > 15 ? "Seedance 2.5 (best)" : "Seedance 2.0 Fast";
+
   try {
     if (onStatus) {
       if (testMode) {
@@ -173,24 +200,46 @@ export async function frankgptGenerate({
       } else {
         onStatus(
           "FRANKGPT · " +
+            modelLabel +
+            " · " +
             sec +
-            "s (max 30) · Generating via Puter…\n" +
-            "Real AI video often takes 1–5+ minutes.\n" +
-            "Keep this tab open. Do not refresh."
+            "s\n" +
+            "Best/fast Puter route. Often 1–5+ min.\n" +
+            "Keep this tab open."
         );
       }
     }
 
-    // Longer clips need more wait; Puter upstream ~10 min
     const waitMs = testMode ? 60000 : Math.min(600000, 180000 + sec * 15000);
 
-    const result = await withTimeout(puter.ai.txt2vid(puterOpts), waitMs, "FRANKGPT");
+    let result;
+    let usedModel = primary;
+    try {
+      result = await withTimeout(
+        puter.ai.txt2vid(buildOpts(primary)),
+        waitMs,
+        "FRANKGPT"
+      );
+    } catch (e1) {
+      if (!testMode && isModelMissing(e1) && fallback && fallback !== primary) {
+        if (onStatus) onStatus("Trying fallback model…");
+        usedModel = fallback;
+        result = await withTimeout(
+          puter.ai.txt2vid(buildOpts(fallback)),
+          waitMs,
+          "FRANKGPT"
+        );
+      } else {
+        throw e1;
+      }
+    }
+
     const blob = await resultToBlob(result);
     return {
       blob,
       meta: {
         prompt: enhanced,
-        model: testMode ? "test-sample" : model,
+        model: testMode ? "test-sample" : usedModel,
         seconds: sec,
         ar,
         engine: FRANKGPT.name,
@@ -208,10 +257,10 @@ export function friendlyError(e) {
   const m = String(e?.message || e || "");
   const code = e?.code || e?.errorCode || "";
   if (code === "insufficient_funds" || /insufficient/i.test(m)) {
-    return "Not enough Puter credits.\nAdd free/paid credits at puter.com — or use Test sample.";
+    return "Not enough Puter credits.\nAdd credits at puter.com — or use Test sample.";
   }
   if (code === "upstream_timeout" || /timed out|timeout/i.test(m)) {
-    return "Provider took too long.\nTry 10s again, or Test sample first.";
+    return "Provider took too long.\nTry 10s (Fast) again, or Test sample.";
   }
   if (code === "popup_blocked") return "Allow popups for Puter sign-in, then try again.";
   if (/moderation/i.test(m) || code === "moderation_flagged") {
