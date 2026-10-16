@@ -1,16 +1,17 @@
 /**
  * FRANKGPT Engine
  * Product brand: FRANKGPT
- * Backend (default): Wan 2.7 via Puter.js — top-tier T2V + I2V, no API keys for the app owner
- * No Supabase. User-pays on Puter. Ready to swap providers later.
+ * Backend: Wan 2.7 via Puter.js (user-pays). No Supabase.
+ * Real AI video often takes 1–5+ minutes — that is normal for this class of model.
  */
 export const FRANKGPT = {
   name: "FRANKGPT",
-  version: "1.0",
+  version: "1.1",
   t2v: "wan-ai/wan2.7-t2v",
   i2v: "wan-ai/wan2.7-i2v",
   label: "FRANKGPT · Wan 2.7",
   maxSeconds: 15,
+  defaultSeconds: 5,
   sizes: {
     "9:16": "720x1280",
     "16:9": "1280x720",
@@ -22,21 +23,15 @@ export function enhancePrompt(raw, hasImage) {
   let p = (raw || "").trim();
   if (!p) {
     p = hasImage
-      ? "Animate this image with natural continuous motion, cinematic lighting, coherent camera"
+      ? "Animate this image with natural continuous motion, cinematic lighting"
       : "";
   }
   if (!p) return p;
   const low = p.toLowerCase();
   const bits = [];
-  if (!/cinematic|photoreal|film|realistic|hyperreal/i.test(low)) {
-    bits.push("photorealistic cinematic video");
-  }
-  if (!/camera|drone|orbit|handheld|shot|pan|dolly|tracking/i.test(low)) {
-    bits.push("smooth continuous camera motion");
-  }
-  if (!/no text|watermark|logo/i.test(low)) {
-    bits.push("no on-screen text, no watermark");
-  }
+  if (!/cinematic|photoreal|film|realistic/i.test(low)) bits.push("photorealistic cinematic video");
+  if (!/camera|drone|orbit|handheld|shot|pan/i.test(low)) bits.push("smooth continuous camera motion");
+  if (!/no text|watermark/i.test(low)) bits.push("no on-screen text, no watermark");
   if (bits.length) p = bits.join(", ") + ". " + p;
   return p.slice(0, 1200);
 }
@@ -49,7 +44,7 @@ export async function ensureAuth(onStatus) {
     if (puter.auth?.isSignedIn && (await puter.auth.isSignedIn())) return;
   } catch (_) {}
   if (puter.auth?.signIn) {
-    if (onStatus) onStatus("Sign in to Puter for generation…\nAllow the popup.");
+    if (onStatus) onStatus("Sign in to Puter (needed for real generation)…\nAllow the popup.");
     await puter.auth.signIn({ attempt_temp_user_creation: true });
   }
 }
@@ -87,35 +82,53 @@ function withTimeout(p, ms, label) {
   let to;
   const t = new Promise((_, rej) => {
     to = setTimeout(
-      () => rej(new Error((label || "Request") + " timed out after " + Math.round(ms / 1000) + "s")),
+      () => rej(new Error((label || "Request") + " timed out after " + Math.round(ms / 1000) + "s. Try 5s or Test sample.")),
       ms
     );
   });
   return Promise.race([p, t]).finally(() => clearTimeout(to));
 }
 
+/**
+ * @param {object} opts
+ * @param {string} opts.prompt
+ * @param {string} [opts.ar]
+ * @param {number} [opts.seconds] - prefer 5 for faster results
+ * @param {string|null} [opts.refDataUrl]
+ * @param {boolean} [opts.testMode] - free instant sample from Puter (no real model)
+ * @param {function} [opts.onTick]
+ * @param {function} [opts.onStatus]
+ */
 export async function frankgptGenerate({
   prompt,
   ar = "9:16",
-  seconds = 10,
+  seconds = FRANKGPT.defaultSeconds,
   refDataUrl = null,
+  testMode = false,
   onTick = null,
   onStatus = null
 } = {}) {
-  const sec = Math.min(Math.max(Number(seconds) || 10, 2), FRANKGPT.maxSeconds);
+  const sec = Math.min(Math.max(Number(seconds) || FRANKGPT.defaultSeconds, 2), FRANKGPT.maxSeconds);
   const model = refDataUrl ? FRANKGPT.i2v : FRANKGPT.t2v;
   const size = FRANKGPT.sizes[ar] || FRANKGPT.sizes["9:16"];
   const enhanced = enhancePrompt(prompt, !!refDataUrl);
 
-  await ensureAuth(onStatus);
+  if (!testMode) {
+    await ensureAuth(onStatus);
+  }
 
   const puterOpts = {
-    prompt: enhanced,
+    prompt: enhanced || "A simple cinematic test clip",
     model,
     seconds: sec,
     size
   };
   if (refDataUrl) puterOpts.input_reference = refDataUrl;
+  // Puter free sample path — verifies UI without spending credits
+  if (testMode) {
+    puterOpts.testMode = true;
+    puterOpts.test_mode = true;
+  }
 
   const started = Date.now();
   let tickTimer = null;
@@ -125,10 +138,21 @@ export async function frankgptGenerate({
   }
 
   try {
-    if (onStatus) onStatus("FRANKGPT · " + sec + "s · Generating…");
+    if (onStatus) {
+      if (testMode) onStatus("FRANKGPT test mode · free sample (instant)…");
+      else onStatus(
+        "FRANKGPT · " + sec + "s · Generating…\n" +
+        "Real AI video often takes 1–5 minutes.\n" +
+        "Keep this tab open. Do not refresh."
+      );
+    }
+
+    // Test mode: shorter client timeout; real: allow up to ~8 min (Puter allows ~10)
+    const waitMs = testMode ? 60000 : 480000;
+
     const result = await withTimeout(
       puter.ai.txt2vid(puterOpts),
-      600000,
+      waitMs,
       "FRANKGPT"
     );
     const blob = await resultToBlob(result);
@@ -136,11 +160,12 @@ export async function frankgptGenerate({
       blob,
       meta: {
         prompt: enhanced,
-        model,
+        model: testMode ? "test-sample" : model,
         seconds: sec,
         ar,
         engine: FRANKGPT.name,
         version: FRANKGPT.version,
+        testMode: !!testMode,
         ts: Date.now()
       }
     };
@@ -153,13 +178,18 @@ export function friendlyError(e) {
   const m = String(e?.message || e || "");
   const code = e?.code || e?.errorCode || "";
   if (code === "insufficient_funds" || /insufficient/i.test(m)) {
-    return "Not enough Puter credits.\nAdd credits at puter.com or try a shorter clip.";
+    return "Not enough Puter credits.\nAdd credits at puter.com — or use Test sample (free).";
+  }
+  if (code === "upstream_timeout" || /timed out|timeout/i.test(m)) {
+    return "Provider took too long (common under load).\nTry again with 5s, or Test sample first.";
   }
   if (code === "popup_blocked") return "Allow popups for Puter sign-in, then try again.";
-  if (/model not found|not found|deprecated/i.test(m)) {
-    return "Video model temporarily unavailable.\nReload and try again.";
+  if (/moderation/i.test(m) || code === "moderation_flagged") {
+    return "Content filter blocked this prompt. Try different wording.";
   }
-  if (/timed out/i.test(m)) return "Generation timed out. Try 5–10s on a strong connection.";
+  if (/model not found|not found|deprecated/i.test(m)) {
+    return "Video model temporarily unavailable. Reload and try again.";
+  }
   if (/cancelled/i.test(m)) return "Cancelled.";
   return m.slice(0, 280);
 }
