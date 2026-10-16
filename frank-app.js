@@ -1,75 +1,52 @@
-/* frankgpt — full UI controller matching the design mockups. Self-contained. */
+/* frankgpt — full UI controller. Gate + all screens. Works on static (GitHub Pages) and with a live API. */
 (function () {
   "use strict";
 
-  const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
 
-  // ---------- state ----------
-  const state = {
+  var state = {
     token: localStorage.getItem("frank_token") || "",
     guestKey: localStorage.getItem("frank_guest") || "",
     user: null,
     health: null,
+    online: false,
     style: "realistic",
     duration: 10,
     aspect: "9:16",
     busy: false,
     abort: null,
+    phoneSent: false
   };
 
-  // ---------- utils ----------
   function apiBase() {
     try {
-      const ls = JSON.parse(localStorage.getItem("frank_api") || "\"\"");
+      var ls = JSON.parse(localStorage.getItem("frank_api") || "\"\"");
       if (ls) return String(ls).replace(/\/+$/, "");
-    } catch {}
-    return (window.FRANK_CONFIG?.API_BASE || "").toString().replace(/\/+$/, "");
+    } catch (e) {}
+    return (window.FRANK_CONFIG && window.FRANK_CONFIG.API_BASE || "").toString().replace(/\/+$/, "");
   }
 
-  function toast(msg, ms = 2800) {
-    const el = $("#toast");
+  function toast(msg, ms) {
+    ms = ms || 3200;
+    var el = $("#toast");
+    if (!el) { try { alert(msg); } catch (e) {} return; }
     el.textContent = msg;
     el.classList.add("on");
     clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove("on"), ms);
+    el._t = setTimeout(function () { el.classList.remove("on"); }, ms);
   }
 
   function showStat(msg, err, ok) {
-    const el = $("#stat");
+    var el = $("#stat");
     if (!el) return;
     el.className = "status on" + (err ? " err" : ok ? " ok" : "");
     el.textContent = msg;
   }
 
   function hideStat() {
-    const el = $("#stat");
+    var el = $("#stat");
     if (el) el.className = "status";
-  }
-
-  async function api(path, opts = {}) {
-    const base = apiBase();
-    const url = (base || "") + "/api/v1" + path;
-    const headers = { "Content-Type": "application/json", Accept: "application/json" };
-    if (state.token) headers.Authorization = "Bearer " + state.token;
-    if (state.guestKey && !state.token) headers["X-Guest-Key"] = state.guestKey;
-    const res = await fetch(url, {
-      method: opts.method || "GET",
-      headers,
-      body: opts.body ? JSON.stringify(opts.body) : undefined,
-      signal: opts.signal,
-    });
-    const text = await res.text();
-    let data;
-    try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
-    if (!res.ok) {
-      const err = new Error(data.message || data.error || res.statusText || "Request failed");
-      err.status = res.status;
-      err.code = data.code;
-      err.data = data;
-      throw err;
-    }
-    return data;
   }
 
   function ensureGuest() {
@@ -79,17 +56,54 @@
     }
   }
 
-  // ---------- screens ----------
+  async function api(path, opts) {
+    opts = opts || {};
+    var base = apiBase();
+    var url = (base || "") + "/api/v1" + path;
+    var headers = { "Content-Type": "application/json", Accept: "application/json" };
+    if (state.token) headers.Authorization = "Bearer " + state.token;
+    if (state.guestKey && !state.token) headers["X-Guest-Key"] = state.guestKey;
+
+    var res;
+    try {
+      res = await fetch(url, {
+        method: opts.method || "GET",
+        headers: headers,
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+        signal: opts.signal || null
+      });
+    } catch (netErr) {
+      var e = new Error("Cannot reach FRANKGPT server. Set the server URL in Settings, or run: python3 server/server.py");
+      e.status = 0;
+      e.code = "network";
+      throw e;
+    }
+
+    var text = await res.text();
+    var data;
+    try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { message: text }; }
+    if (!res.ok) {
+      var err = new Error(data.message || data.error || res.statusText || "Request failed");
+      err.status = res.status;
+      err.code = data.code;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
   function showScreen(name) {
-    $$(".screen").forEach((s) => s.classList.remove("on"));
-    const el = $("#screen-" + name);
+    $$(".screen").forEach(function (s) { s.classList.remove("on"); });
+    var el = $("#screen-" + name);
     if (el) el.classList.add("on");
-    $$("#nav button[data-screen]").forEach((b) => {
-      b.classList.toggle("on", b.dataset.screen === name && !b.classList.contains("fab"));
-      if (b.classList.contains("fab")) b.classList.toggle("on", name === "create");
+
+    $$("#nav button[data-screen]").forEach(function (b) {
+      var isFab = b.classList.contains("fab");
+      if (isFab) b.classList.toggle("on", name === "create");
+      else b.classList.toggle("on", b.getAttribute("data-screen") === name);
     });
     if (name === "explore") {
-      $$("#nav button[data-screen=explore]").forEach((b) => b.classList.add("on"));
+      $$("#nav button[data-screen=explore]").forEach(function (b) { b.classList.add("on"); });
     }
     if (name === "library") loadLibrary();
     if (name === "explore") loadFeed();
@@ -97,265 +111,361 @@
   }
 
   function enterApp() {
-    $("#gate").classList.add("off");
-    $("#nav").style.display = "flex";
+    var gate = $("#gate");
+    if (gate) gate.classList.add("off");
+    var nav = $("#nav");
+    if (nav) nav.style.display = "flex";
     showScreen("explore");
     checkHealth();
   }
 
-  // ---------- auth ----------
   function hideAuthForms() {
-    $$(".auth-panel").forEach((p) => p.classList.remove("on"));
-    $("#gate-btns").style.display = "flex";
+    $$(".auth-panel").forEach(function (p) { p.classList.remove("on"); });
+    var btns = $("#gate-btns");
+    if (btns) btns.style.display = "flex";
   }
 
-  $("#btn-email")?.addEventListener("click", () => {
-    $("#gate-btns").style.display = "none";
-    $("#form-email").classList.add("on");
-  });
-  $("#email-back")?.addEventListener("click", hideAuthForms);
-
-  $("#btn-phone")?.addEventListener("click", () => {
-    $("#gate-btns").style.display = "none";
-    $("#form-phone").classList.add("on");
-  });
-  $("#phone-back")?.addEventListener("click", hideAuthForms);
-
-  $("#btn-guest")?.addEventListener("click", () => {
+  function goGuest() {
     ensureGuest();
     state.token = "";
     localStorage.removeItem("frank_token");
     state.user = { name: "Guest", plan: "guest" };
     enterApp();
-  });
+    toast("Welcome — browsing as Guest");
+  }
 
-  $("#email-submit")?.addEventListener("click", async () => {
-    const email = $("#email-addr").value.trim();
-    const password = $("#email-pass").value;
-    const name = ($("#email-name").value || "Creator").trim();
-    if (!email || password.length < 8) return toast("Email + password (8+) required");
-    try {
-      let data;
-      try {
-        data = await api("/auth/login", { method: "POST", body: { email, password } });
-      } catch (e) {
-        if (e.status === 401 || e.code === "bad_login") {
-          data = await api("/auth/register", { method: "POST", body: { email, password, name } });
-        } else throw e;
+  var btnGuest = $("#btn-guest");
+  if (btnGuest) {
+    btnGuest.addEventListener("click", function (e) {
+      e.preventDefault();
+      goGuest();
+    });
+  }
+
+  var btnEmail = $("#btn-email");
+  if (btnEmail) {
+    btnEmail.addEventListener("click", function (e) {
+      e.preventDefault();
+      var btns = $("#gate-btns");
+      if (btns) btns.style.display = "none";
+      var form = $("#form-email");
+      if (form) form.classList.add("on");
+    });
+  }
+  var emailBack = $("#email-back");
+  if (emailBack) emailBack.addEventListener("click", function (e) { e.preventDefault(); hideAuthForms(); });
+
+  var btnPhone = $("#btn-phone");
+  if (btnPhone) {
+    btnPhone.addEventListener("click", function (e) {
+      e.preventDefault();
+      var btns = $("#gate-btns");
+      if (btns) btns.style.display = "none";
+      var form = $("#form-phone");
+      if (form) form.classList.add("on");
+    });
+  }
+  var phoneBack = $("#phone-back");
+  if (phoneBack) phoneBack.addEventListener("click", function (e) { e.preventDefault(); hideAuthForms(); state.phoneSent = false; });
+
+  var emailSubmit = $("#email-submit");
+  if (emailSubmit) {
+    emailSubmit.addEventListener("click", async function (e) {
+      e.preventDefault();
+      var email = ($("#email-addr") && $("#email-addr").value || "").trim();
+      var password = ($("#email-pass") && $("#email-pass").value) || "";
+      var name = (($("#email-name") && $("#email-name").value) || "Creator").trim();
+      if (!email || password.length < 8) {
+        toast("Enter email and password (8+ characters)");
+        return;
       }
-      state.token = data.token;
-      state.user = data.user;
-      localStorage.setItem("frank_token", state.token);
-      enterApp();
-    } catch (e) {
-      toast(e.message || "Auth failed");
-    }
-  });
-
-  let phoneSent = false;
-  $("#phone-submit")?.addEventListener("click", async () => {
-    const phone = $("#phone-num").value.trim();
-    const code = $("#phone-code").value.trim();
-    const name = ($("#phone-name").value || "Creator").trim();
-    try {
-      if (!phoneSent) {
-        await api("/auth/phone/start", { method: "POST", body: { phone } });
-        phoneSent = true;
-        $("#phone-code").style.display = "block";
-        toast("Code sent");
-      } else {
-        const data = await api("/auth/phone/verify", { method: "POST", body: { phone, code, name } });
+      emailSubmit.disabled = true;
+      emailSubmit.textContent = "Working…";
+      try {
+        var data;
+        try {
+          data = await api("/auth/login", { method: "POST", body: { email: email, password: password } });
+        } catch (err) {
+          if (err.status === 401 || err.code === "bad_login") {
+            data = await api("/auth/register", { method: "POST", body: { email: email, password: password, name: name } });
+          } else {
+            throw err;
+          }
+        }
         state.token = data.token;
         state.user = data.user;
         localStorage.setItem("frank_token", state.token);
         enterApp();
+        toast("Signed in");
+      } catch (err) {
+        if (err.code === "network" || err.status === 0) {
+          toast("Server offline — use Continue as Guest, then set server in Settings");
+        } else {
+          toast(err.message || "Sign-in failed");
+        }
+      } finally {
+        emailSubmit.disabled = false;
+        emailSubmit.textContent = "Continue with Email";
       }
-    } catch (e) {
-      toast(e.message || "Phone auth failed");
-    }
-  });
+    });
+  }
 
-  $("#btn-google")?.addEventListener("click", async () => {
-    try {
-      const h = state.health || (await api("/health"));
-      if (!h.google_client_id) {
-        toast("Google sign-in not configured on this server");
-        return;
+  var phoneSubmit = $("#phone-submit");
+  if (phoneSubmit) {
+    phoneSubmit.addEventListener("click", async function (e) {
+      e.preventDefault();
+      var phone = ($("#phone-num") && $("#phone-num").value || "").trim();
+      var code = ($("#phone-code") && $("#phone-code").value || "").trim();
+      var name = (($("#phone-name") && $("#phone-name").value) || "Creator").trim();
+      phoneSubmit.disabled = true;
+      var orig = phoneSubmit.textContent;
+      phoneSubmit.textContent = "Working…";
+      try {
+        if (!state.phoneSent) {
+          await api("/auth/phone/start", { method: "POST", body: { phone: phone } });
+          state.phoneSent = true;
+          var codeEl = $("#phone-code");
+          if (codeEl) codeEl.style.display = "block";
+          toast("Verification code sent");
+        } else {
+          var data = await api("/auth/phone/verify", { method: "POST", body: { phone: phone, code: code, name: name } });
+          state.token = data.token;
+          state.user = data.user;
+          localStorage.setItem("frank_token", state.token);
+          enterApp();
+          toast("Signed in");
+        }
+      } catch (err) {
+        if (err.code === "network" || err.status === 0) {
+          toast("Server offline — use Continue as Guest");
+        } else {
+          toast(err.message || "Phone sign-in failed");
+        }
+      } finally {
+        phoneSubmit.disabled = false;
+        phoneSubmit.textContent = orig;
       }
-      if (!window.google?.accounts) {
-        await new Promise((res, rej) => {
-          const s = document.createElement("script");
-          s.src = "https://accounts.google.com/gsi/client";
-          s.onload = res;
-          s.onerror = rej;
-          document.head.appendChild(s);
-        });
-      }
-      window.google.accounts.id.initialize({
-        client_id: h.google_client_id,
-        callback: async (resp) => {
-          try {
-            const data = await api("/auth/google", { method: "POST", body: { credential: resp.credential } });
-            state.token = data.token;
-            state.user = data.user;
-            localStorage.setItem("frank_token", state.token);
-            enterApp();
-          } catch (e) {
-            toast(e.message || "Google sign-in failed");
+    });
+  }
+
+  var btnGoogle = $("#btn-google");
+  if (btnGoogle) {
+    btnGoogle.addEventListener("click", async function (e) {
+      e.preventDefault();
+      btnGoogle.disabled = true;
+      var orig = btnGoogle.innerHTML;
+      btnGoogle.textContent = "Connecting…";
+      try {
+        var h;
+        try {
+          h = state.health || (await api("/health"));
+          state.health = h;
+          state.online = true;
+        } catch (err) {
+          toast("Server offline — Google needs a running FRANKGPT server. Use Continue as Guest.");
+          return;
+        }
+        if (!h.google_client_id) {
+          toast("Google sign-in is not configured on this server. Use Email or Guest.");
+          return;
+        }
+        if (!(window.google && window.google.accounts)) {
+          await new Promise(function (res, rej) {
+            var s = document.createElement("script");
+            s.src = "https://accounts.google.com/gsi/client";
+            s.onload = res;
+            s.onerror = function () { rej(new Error("Could not load Google Sign-In")); };
+            document.head.appendChild(s);
+          });
+        }
+        window.google.accounts.id.initialize({
+          client_id: h.google_client_id,
+          callback: async function (resp) {
+            try {
+              var data = await api("/auth/google", { method: "POST", body: { credential: resp.credential } });
+              state.token = data.token;
+              state.user = data.user;
+              localStorage.setItem("frank_token", state.token);
+              enterApp();
+              toast("Signed in with Google");
+            } catch (err) {
+              toast(err.message || "Google sign-in failed");
+            }
           }
-        },
-      });
-      window.google.accounts.id.prompt();
-    } catch (e) {
-      toast(e.message || "Could not start Google sign-in");
-    }
-  });
+        });
+        window.google.accounts.id.prompt();
+      } catch (err) {
+        toast(err.message || "Google sign-in unavailable");
+      } finally {
+        btnGoogle.disabled = false;
+        btnGoogle.innerHTML = orig;
+      }
+    });
+  }
 
-  $("#btn-signout")?.addEventListener("click", async () => {
-    try { if (state.token) await api("/auth/logout", { method: "POST" }); } catch {}
-    state.token = "";
-    state.user = null;
-    localStorage.removeItem("frank_token");
-    $("#gate").classList.remove("off");
-    $("#nav").style.display = "none";
-    $$(".screen").forEach((s) => s.classList.remove("on"));
-    hideAuthForms();
-  });
+  var btnSignout = $("#btn-signout");
+  if (btnSignout) {
+    btnSignout.addEventListener("click", async function () {
+      try { if (state.token) await api("/auth/logout", { method: "POST" }); } catch (e) {}
+      state.token = "";
+      state.user = null;
+      localStorage.removeItem("frank_token");
+      var gate = $("#gate");
+      if (gate) gate.classList.remove("off");
+      var nav = $("#nav");
+      if (nav) nav.style.display = "none";
+      $$(".screen").forEach(function (s) { s.classList.remove("on"); });
+      hideAuthForms();
+      toast("Signed out");
+    });
+  }
 
-  // ---------- health ----------
   async function checkHealth() {
     try {
       state.health = await api("/health");
-      const url = apiBase() || (location.origin + " (same origin)");
-      const el = $("#set-server-url");
+      state.online = true;
+      var url = apiBase() || (location.origin + " (same origin)");
+      var el = $("#set-server-url");
       if (el) el.textContent = url + (state.health.ready ? " · ready" : " · engine offline");
-    } catch {
-      const el = $("#set-server-url");
-      if (el) el.textContent = (apiBase() || "not set") + " · unreachable";
+    } catch (e) {
+      state.online = false;
+      var el2 = $("#set-server-url");
+      if (el2) el2.textContent = (apiBase() || "not set") + " · unreachable";
     }
   }
 
-  // ---------- create ----------
-  $("#prompt")?.addEventListener("input", () => {
-    $("#prompt-count").textContent = ($("#prompt").value || "").length;
+  var promptEl = $("#prompt");
+  if (promptEl) {
+    promptEl.addEventListener("input", function () {
+      var c = $("#prompt-count");
+      if (c) c.textContent = (promptEl.value || "").length;
+    });
+  }
+
+  $$("#styles .chip").forEach(function (c) {
+    c.addEventListener("click", function () {
+      $$("#styles .chip").forEach(function (x) { x.classList.remove("on"); });
+      c.classList.add("on");
+      state.style = c.getAttribute("data-style") || "realistic";
+    });
+  });
+  $$("#durs .chip").forEach(function (c) {
+    c.addEventListener("click", function () {
+      $$("#durs .chip").forEach(function (x) { x.classList.remove("on"); });
+      c.classList.add("on");
+      state.duration = Number(c.getAttribute("data-dur")) || 10;
+    });
+  });
+  $$("#aspects .chip").forEach(function (c) {
+    c.addEventListener("click", function () {
+      $$("#aspects .chip").forEach(function (x) { x.classList.remove("on"); });
+      c.classList.add("on");
+      state.aspect = c.getAttribute("data-aspect") || "9:16";
+    });
   });
 
-  $$("#styles .chip").forEach((c) =>
-    c.addEventListener("click", () => {
-      $$("#styles .chip").forEach((x) => x.classList.remove("on"));
-      c.classList.add("on");
-      state.style = c.dataset.style;
-    })
-  );
-  $$("#durs .chip").forEach((c) =>
-    c.addEventListener("click", () => {
-      $$("#durs .chip").forEach((x) => x.classList.remove("on"));
-      c.classList.add("on");
-      state.duration = Number(c.dataset.dur) || 10;
-    })
-  );
-  $$("#aspects .chip").forEach((c) =>
-    c.addEventListener("click", () => {
-      $$("#aspects .chip").forEach((x) => x.classList.remove("on"));
-      c.classList.add("on");
-      state.aspect = c.dataset.aspect || "9:16";
-    })
-  );
-
   function enhance(prompt, style) {
-    const map = {
+    var map = {
       realistic: "photorealistic, highly detailed, natural lighting",
       cinematic: "cinematic, dramatic lighting, film grain, anamorphic",
       animated: "animated, stylized, vibrant colors",
-      abstract: "abstract, surreal, artistic",
+      abstract: "abstract, surreal, artistic"
     };
-    const tag = map[style] || "";
+    var tag = map[style] || "";
     return tag ? prompt.trim() + ". " + tag : prompt.trim();
   }
 
-  $("#go")?.addEventListener("click", async () => {
-    if (state.busy) return;
-    const raw = ($("#prompt").value || "").trim();
-    if (!raw) return showStat("Describe your idea first.", true);
+  var goBtn = $("#go");
+  if (goBtn) {
+    goBtn.addEventListener("click", async function () {
+      if (state.busy) return;
+      var raw = (promptEl && promptEl.value || "").trim();
+      if (!raw) { showStat("Describe your idea first.", true); return; }
 
-    ensureGuest();
-    state.busy = true;
-    state.abort = new AbortController();
-    $("#go").disabled = true;
-    $("#result").classList.remove("on");
-    hideStat();
+      ensureGuest();
+      state.busy = true;
+      state.abort = new AbortController();
+      goBtn.disabled = true;
+      var result = $("#result");
+      if (result) result.classList.remove("on");
+      hideStat();
 
-    const prompt = enhance(raw, state.style);
-    const seconds = state.duration;
-    const MAX_WAIT = Math.max(120000, seconds * 30000);
+      var prompt = enhance(raw, state.style);
+      var seconds = state.duration;
+      var MAX_WAIT = Math.max(120000, seconds * 30000);
 
-    try {
-      showStat("frankgpt · " + seconds + "s\nSubmitting job…");
-      let job = await api("/generations", {
-        method: "POST",
-        signal: state.abort.signal,
-        body: {
-          prompt,
-          duration: seconds,
-          aspect: state.aspect,
-          mode: "t2v",
-        },
-      });
-      const jobId = job.id || job.job_id;
-      if (!jobId) throw new Error(job.message || "No job id");
+      try {
+        showStat("frankgpt · " + seconds + "s\nSubmitting job…");
+        var job = await api("/generations", {
+          method: "POST",
+          signal: state.abort.signal,
+          body: { prompt: prompt, duration: seconds, aspect: state.aspect, mode: "t2v" }
+        });
+        var jobId = job.id || job.job_id;
+        if (!jobId) throw new Error(job.message || "No job id");
 
-      const norm = (s) => String(s || "").toLowerCase();
-      let status = norm(job.status);
-      const fail = new Set(["failed", "blocked", "error", "cancelled"]);
-      const ok = new Set(["succeeded", "completed"]);
+        function norm(s) { return String(s || "").toLowerCase(); }
+        var status = norm(job.status);
+        var fail = { failed: 1, blocked: 1, error: 1, cancelled: 1 };
+        var ok = { succeeded: 1, completed: 1 };
 
-      if (fail.has(status)) {
-        showStat(job.message || job.error || "Generation blocked or failed.", true);
-        return;
-      }
+        if (fail[status]) {
+          showStat(job.message || job.error || "Generation blocked or failed.", true);
+          return;
+        }
 
-      const t0 = Date.now();
-      while (!ok.has(status) && !fail.has(status)) {
-        if (Date.now() - t0 > MAX_WAIT) throw new Error("Timed out — check server / GPU.");
-        const seg =
-          job.segment_total > 1
+        var t0 = Date.now();
+        while (!ok[status] && !fail[status]) {
+          if (Date.now() - t0 > MAX_WAIT) throw new Error("Timed out — check server / GPU.");
+          var seg = job.segment_total > 1
             ? "\nSegment " + Math.min((job.segment_done || 0) + 1, job.segment_total) + "/" + job.segment_total
             : "";
-        showStat("frankgpt · " + seconds + "s · " + status + seg + "\n" + (job.message || "") + "\n" + Math.round((Date.now() - t0) / 1000) + "s");
-        await new Promise((r) => setTimeout(r, 2000));
-        job = await api("/generations/" + jobId, { signal: state.abort.signal });
-        status = norm(job.status);
+          showStat("frankgpt · " + seconds + "s · " + status + seg + "\n" + (job.message || "") + "\n" + Math.round((Date.now() - t0) / 1000) + "s");
+          await new Promise(function (r) { setTimeout(r, 2000); });
+          job = await api("/generations/" + jobId, { signal: state.abort.signal });
+          status = norm(job.status);
+        }
+
+        if (fail[status]) {
+          showStat(job.message || "Failed.", true);
+          return;
+        }
+
+        var videoUrl = job.video_url || ("/api/v1/generations/" + jobId + "/video");
+        var full = (apiBase() || "") + videoUrl;
+        var vid = $("#result-vid");
+        if (vid) vid.src = full;
+        if (result) result.classList.add("on");
+        showStat("Done · " + seconds + "s video ready.", false, true);
+        toast("Video ready");
+        loadLibrary();
+      } catch (err) {
+        if (err.name === "AbortError") showStat("Cancelled.", true);
+        else if (err.code === "network" || err.status === 0) {
+          showStat("No server connected.\nSet FRANKGPT Server in Settings, or run:\npython3 server/server.py", true);
+        } else {
+          showStat(err.message || "Generation failed.", true);
+        }
+      } finally {
+        state.busy = false;
+        goBtn.disabled = false;
       }
+    });
+  }
 
-      if (fail.has(status)) {
-        showStat(job.message || "Failed.", true);
-        return;
-      }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
 
-      const videoUrl = job.video_url || ("/api/v1/generations/" + jobId + "/video");
-      const full = (apiBase() || "") + videoUrl;
-      const vid = $("#result-vid");
-      vid.src = full;
-      $("#result").classList.add("on");
-      showStat("Done · " + seconds + "s video ready.", false, true);
-      toast("Video ready");
-      loadLibrary();
-    } catch (e) {
-      if (e.name === "AbortError") showStat("Cancelled.", true);
-      else showStat(e.message || "Generation failed.", true);
-    } finally {
-      state.busy = false;
-      $("#go").disabled = false;
-    }
-  });
-
-  // ---------- library ----------
   async function loadLibrary() {
-    const empty = $("#lib-empty");
-    const grid = $("#lib-grid");
+    var empty = $("#lib-empty");
+    var grid = $("#lib-grid");
+    if (!empty || !grid) return;
     try {
-      const data = await api("/library");
-      const items = data.items || data.jobs || data || [];
+      var data = await api("/library");
+      var items = data.items || data.jobs || data || [];
       if (!items.length) {
         empty.style.display = "flex";
         grid.style.display = "none";
@@ -363,149 +473,165 @@
       }
       empty.style.display = "none";
       grid.style.display = "grid";
-      grid.innerHTML = items
-        .map((j) => {
-          const id = j.id || j.job_id;
-          const url = (apiBase() || "") + (j.video_url || "/api/v1/generations/" + id + "/video");
-          const title = (j.prompt || "Untitled").slice(0, 40);
-          return `<div class="t-card" data-id="${id}">
-            <div class="thumb"><video src="${url}" muted playsinline preload="metadata"></video>
-              <div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div>
-            <div class="meta"><div class="title">${esc(title)}</div>
-              <div class="views">${j.duration || "?"}s · ${j.status || ""}</div></div>
-          </div>`;
-        })
-        .join("");
-      grid.querySelectorAll(".t-card").forEach((card) => {
-        card.addEventListener("click", () => {
-          const v = card.querySelector("video");
+      grid.innerHTML = items.map(function (j) {
+        var id = j.id || j.job_id;
+        var url = (apiBase() || "") + (j.video_url || "/api/v1/generations/" + id + "/video");
+        var title = (j.prompt || "Untitled").slice(0, 40);
+        return '<div class="t-card" data-id="' + id + '">' +
+          '<div class="thumb"><video src="' + url + '" muted playsinline preload="metadata"></video>' +
+          '<div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div>' +
+          '<div class="meta"><div class="title">' + esc(title) + '</div>' +
+          '<div class="views">' + (j.duration || "?") + "s · " + (j.status || "") + "</div></div></div>";
+      }).join("");
+      grid.querySelectorAll(".t-card").forEach(function (card) {
+        card.addEventListener("click", function () {
+          var v = card.querySelector("video");
           if (v) {
-            $("#result-vid").src = v.src;
-            $("#result").classList.add("on");
+            var rv = $("#result-vid");
+            if (rv) rv.src = v.src;
+            var res = $("#result");
+            if (res) res.classList.add("on");
             showScreen("create");
             showStat("Playing from library", false, true);
           }
         });
       });
-    } catch {
+    } catch (e) {
       empty.style.display = "flex";
       grid.style.display = "none";
     }
   }
 
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  }
-
-  // ---------- feed / explore ----------
   async function loadFeed() {
     try {
-      const data = await api("/feed");
-      const items = data.items || data || [];
-      const grid = $("#feed-grid");
+      var data = await api("/feed");
+      var items = data.items || data || [];
+      var grid = $("#feed-grid");
+      if (!grid) return;
       if (!items.length) {
-        grid.innerHTML = `<p style="color:var(--dim);font-size:13px;grid-column:1/-1">No community posts yet. Create and share!</p>`;
+        grid.innerHTML = '<p style="color:var(--dim);font-size:13px;grid-column:1/-1">No community posts yet. Create and share!</p>';
         return;
       }
-      grid.innerHTML = items
-        .slice(0, 12)
-        .map((j) => {
-          const url = (apiBase() || "") + (j.video_url || "/api/v1/feed/" + (j.id || "") + "/video");
-          return `<div class="t-card">
-            <div class="thumb"><video src="${url}" muted playsinline preload="metadata"></video>
-              <div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div>
-            <div class="meta"><div class="title">${esc((j.prompt || j.caption || "Clip").slice(0, 36))}</div>
-              <div class="views">${j.views != null ? j.views + " views" : ""}</div></div>
-          </div>`;
-        })
-        .join("");
-    } catch {
-      /* keep placeholders */
-    }
+      grid.innerHTML = items.slice(0, 12).map(function (j) {
+        var url = (apiBase() || "") + (j.video_url || "/api/v1/feed/" + (j.id || "") + "/video");
+        return '<div class="t-card">' +
+          '<div class="thumb"><video src="' + url + '" muted playsinline preload="metadata"></video>' +
+          '<div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div>' +
+          '<div class="meta"><div class="title">' + esc((j.prompt || j.caption || "Clip").slice(0, 36)) + '</div>' +
+          '<div class="views">' + (j.views != null ? j.views + " views" : "") + "</div></div></div>";
+      }).join("");
+    } catch (e) {}
   }
 
-  $$("#cats .cat").forEach((c) =>
-    c.addEventListener("click", () => {
-      $$("#cats .cat").forEach((x) => x.classList.remove("on"));
+  $$("#cats .cat").forEach(function (c) {
+    c.addEventListener("click", function () {
+      $$("#cats .cat").forEach(function (x) { x.classList.remove("on"); });
       c.classList.add("on");
-    })
-  );
+    });
+  });
 
-  // ---------- settings ----------
   function refreshSettings() {
-    const name = state.user?.name || (state.token ? "Signed in" : "Guest");
-    const el = $("#set-name");
-    if (el) el.textContent = name + (state.user?.plan ? " · " + state.user.plan : "");
+    var name = (state.user && state.user.name) || (state.token ? "Signed in" : "Guest");
+    var el = $("#set-name");
+    if (el) el.textContent = name + (state.user && state.user.plan ? " · " + state.user.plan : "");
     checkHealth();
   }
 
-  $("#set-server")?.addEventListener("click", () => {
-    const cur = apiBase() || "";
-    openModal(
-      "FRANKGPT Server",
-      `<p>Point the app at your backend. Leave blank for same origin.</p>
-       <input class="field" id="m-server" value="${esc(cur)}" placeholder="https://api.example.com">
-       <div class="row"><button type="button" class="btn btn-outline" id="m-cancel">Cancel</button>
-       <button type="button" class="btn btn-primary" id="m-save">Save</button></div>`,
-      () => {
-        $("#m-cancel").onclick = closeModal;
-        $("#m-save").onclick = () => {
-          const v = $("#m-server").value.trim().replace(/\/+$/, "");
-          localStorage.setItem("frank_api", JSON.stringify(v));
-          closeModal();
-          checkHealth();
-          toast(v ? "Server saved" : "Using same origin");
-        };
-      }
-    );
-  });
-
-  $("#set-about")?.addEventListener("click", () => {
-    openModal(
-      "About frankgpt",
-      `<p>Version frankgpt-standalone-1.0<br>AI video generator. Your UI, your API, your models.</p>
-       <div class="row"><button type="button" class="btn btn-primary" id="m-ok">OK</button></div>`,
-      () => ($("#m-ok").onclick = closeModal)
-    );
-  });
-
   function openModal(title, html, bind) {
-    const m = $("#modal");
-    m.innerHTML = `<h3>${title}</h3>` + html;
-    $("#modal-bg").classList.add("on");
+    var m = $("#modal");
+    if (!m) return;
+    m.innerHTML = "<h3>" + title + "</h3>" + html;
+    var bg = $("#modal-bg");
+    if (bg) bg.classList.add("on");
     if (bind) bind();
   }
   function closeModal() {
-    $("#modal-bg").classList.remove("on");
+    var bg = $("#modal-bg");
+    if (bg) bg.classList.remove("on");
   }
-  $("#modal-bg")?.addEventListener("click", (e) => {
-    if (e.target === $("#modal-bg")) closeModal();
-  });
 
-  // ---------- nav ----------
-  $$("#nav button[data-screen]").forEach((b) => {
-    b.addEventListener("click", () => showScreen(b.dataset.screen));
-  });
-  $("#create-back")?.addEventListener("click", () => showScreen("explore"));
-  $("#set-back")?.addEventListener("click", () => showScreen("explore"));
-  $("#lib-create")?.addEventListener("click", () => showScreen("create"));
-  $("#btn-profile")?.addEventListener("click", () => showScreen("settings"));
-  $("#lib-profile")?.addEventListener("click", () => showScreen("settings"));
+  var setServer = $("#set-server");
+  if (setServer) {
+    setServer.addEventListener("click", function () {
+      var cur = apiBase() || "";
+      openModal(
+        "FRANKGPT Server",
+        '<p>Point the app at your backend. Leave blank for same origin (when UI is served by server/server.py).</p>' +
+        '<input class="field" id="m-server" value="' + esc(cur) + '" placeholder="https://api.example.com or http://192.168.x.x:8000">' +
+        '<div class="row"><button type="button" class="btn btn-outline" id="m-cancel">Cancel</button>' +
+        '<button type="button" class="btn btn-primary" id="m-save">Save</button></div>',
+        function () {
+          var c = $("#m-cancel");
+          if (c) c.onclick = closeModal;
+          var s = $("#m-save");
+          if (s) s.onclick = function () {
+            var v = ($("#m-server") && $("#m-server").value || "").trim().replace(/\/+$/, "");
+            localStorage.setItem("frank_api", JSON.stringify(v));
+            closeModal();
+            checkHealth();
+            toast(v ? "Server saved: " + v : "Using same origin");
+          };
+        }
+      );
+    });
+  }
 
-  // ---------- boot ----------
+  var setAbout = $("#set-about");
+  if (setAbout) {
+    setAbout.addEventListener("click", function () {
+      openModal(
+        "About frankgpt",
+        "<p>Version frankgpt-standalone-1.0<br>AI video generator. Your UI, your API, your models.</p>" +
+        '<div class="row"><button type="button" class="btn btn-primary" id="m-ok">OK</button></div>',
+        function () {
+          var ok = $("#m-ok");
+          if (ok) ok.onclick = closeModal;
+        }
+      );
+    });
+  }
+
+  var modalBg = $("#modal-bg");
+  if (modalBg) {
+    modalBg.addEventListener("click", function (e) {
+      if (e.target === modalBg) closeModal();
+    });
+  }
+
+  $$("#nav button[data-screen]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      showScreen(b.getAttribute("data-screen"));
+    });
+  });
+  var createBack = $("#create-back");
+  if (createBack) createBack.addEventListener("click", function () { showScreen("explore"); });
+  var setBack = $("#set-back");
+  if (setBack) setBack.addEventListener("click", function () { showScreen("explore"); });
+  var libCreate = $("#lib-create");
+  if (libCreate) libCreate.addEventListener("click", function () { showScreen("create"); });
+  var btnProfile = $("#btn-profile");
+  if (btnProfile) btnProfile.addEventListener("click", function () { showScreen("settings"); });
+  var libProfile = $("#lib-profile");
+  if (libProfile) libProfile.addEventListener("click", function () { showScreen("settings"); });
+
   async function boot() {
     if (state.token) {
       try {
-        const me = await api("/auth/me");
+        var me = await api("/auth/me");
         state.user = me.user || me;
         enterApp();
         return;
-      } catch {
+      } catch (e) {
         state.token = "";
         localStorage.removeItem("frank_token");
       }
     }
+    checkHealth().catch(function () {});
   }
 
-  boot();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();
