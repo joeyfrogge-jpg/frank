@@ -1,15 +1,16 @@
-/* FRANK / FRANKGPT - timer fix loader: loads full app from frank-app.full.js */
+/* FRANK app bootstrap - loads part1+part2 (timer fix) */
 (async function(){
-  try {
-    const r = await fetch('./frank-app.full.js?v=' + Date.now());
-    if (!r.ok) throw new Error('failed to load frank-app.full.js');
-    const code = await r.text();
-    const s = document.createElement('script');
-    s.textContent = code;
-    document.body.appendChild(s);
-  } catch (e) {
-    console.error(e);
-    const el = document.getElementById('stat');
-    if (el) { el.className = 'status on err'; el.style.display = 'block'; el.textContent = 'Failed to load app script: ' + e.message; }
+  const parts = ["./frank-app.part1.js", "./frank-app.part2.js"];
+  let code = "";
+  for (const p of parts) {
+    const r = await fetch(p + "?v=" + Date.now());
+    if (!r.ok) throw new Error("Missing " + p + " (" + r.status + ")");
+    code += await r.text() + "\n";
   }
-})();
+  (0, eval)(code);
+})().catch(e => {
+  console.error(e);
+  const el = document.querySelector("#stat");
+  if (el) { el.className = "status on err"; el.style.display = "block"; el.textContent = String(e.message || e); }
+  alert("FRANK failed to load: " + (e.message || e));
+});
