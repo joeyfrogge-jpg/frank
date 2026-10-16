@@ -1,0 +1,47 @@
+name: Build FRANK APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'index.html'
+      - 'iphone.html'
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Prepare web
+        run: |
+          mkdir -p www
+          cp index.html www/index.html || cp iphone.html www/index.html
+          cp manifest.json www/ 2>/dev/null || true
+          cp sw.js www/ 2>/dev/null || true
+      - name: Capacitor Android
+        run: |
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npx cap init "FRANK" "com.frank.video" --web-dir www
+          npx cap add android
+          npx cap sync android
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: frank-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
