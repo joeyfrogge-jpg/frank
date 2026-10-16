@@ -58,6 +58,7 @@ button,input,textarea{font:inherit;color:inherit;border:0;background:none}button
 .actions{display:flex;gap:8px;padding:12px 14px 0;overflow-x:auto}
 .act{flex-shrink:0;padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:13px;font-weight:600;color:#d1d1d6}
 .act.primary{background:rgba(167,139,250,.22);border-color:rgba(167,139,250,.45);color:#e9e0ff}
+.act.dur.on{background:rgba(167,139,250,.22);border-color:rgba(167,139,250,.45);color:#e9e0ff}
 .status{margin:10px 14px 0;padding:11px 13px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:13px;color:var(--muted);white-space:pre-wrap;display:none;font-family:ui-monospace,Menlo,monospace}
 .status.on{display:block}.status.err{border-color:rgba(248,113,113,.35);color:#fecaca;background:rgba(248,113,113,.08)}.status.ok{border-color:rgba(52,211,153,.35);color:#a7f3d0;background:rgba(52,211,153,.08)}
 .result{margin:10px 14px 0;display:none}.result.on{display:block}.result video{width:100%;border-radius:16px;background:#000;max-height:50vh}
@@ -159,6 +160,13 @@ button,input,textarea{font:inherit;color:inherit;border:0;background:none}button
         <button type="button" class="act" id="btn-style">✨ Style</button>
         <button type="button" class="act" id="btn-mood">😊 Mood</button>
       </div>
+      <div class="actions" id="dur-row" style="padding-top:8px">
+        <span style="font-size:12px;color:var(--muted);align-self:center;padding:0 4px">Length</span>
+        <button type="button" class="act dur on" data-sec="10">10s</button>
+        <button type="button" class="act dur" data-sec="15">15s</button>
+        <button type="button" class="act dur" data-sec="20">20s</button>
+        <button type="button" class="act dur" data-sec="30">30s max</button>
+      </div>
       <div class="status" id="stat" role="status"></div>
       <div class="result" id="result">
         <video id="vid" controls playsinline></video>
@@ -191,7 +199,7 @@ button,input,textarea{font:inherit;color:inherit;border:0;background:none}button
       <div class="prof"><div class="prof-av" id="prof-av">👤</div><div class="prof-info"><div class="nm" id="prof-name">Guest</div><div class="em" id="prof-email">—</div></div><button type="button" class="btn-edit">Edit profile</button></div>
       <div class="set-group"><div class="lab">Plan & Engine</div>
         <button type="button" class="set-row" id="btn-upgrade"><span class="ic">⚡</span><span class="tx" id="more-plan">Free · limited</span><span class="chev">›</span></button>
-        <div class="set-row"><span class="ic">🧠</span><span class="tx" id="engine-label">FRANKGPT · Wan 2.7</span></div>
+        <div class="set-row"><span class="ic">🧠</span><span class="tx" id="engine-label">FRANKGPT · Puter</span></div>
       </div>
       <button type="button" class="btn-signout" id="btn-signout">Sign out</button>
     </section>
@@ -247,7 +255,9 @@ $("#btn-style").onclick=()=>{const t=$("#prompt");t.value=(t.value+" cinematic s
 $("#btn-mood").onclick=()=>{const t=$("#prompt");t.value=(t.value+" moody atmosphere").trim();t.focus()};
 let busy=false,lastBlob=null,abort=false;
 const stat=(t,err,ok)=>{const s=$("#stat");s.className="status on"+(err?" err":ok?" ok":"");s.textContent=t};
-async function generate(testMode=false){if(busy)return;const raw=$("#prompt").value.trim();if(!testMode&&!raw&&!ref){stat("Add a prompt or photo first.",true);return}busy=true;abort=false;$("#go").disabled=true;$("#go").classList.add("busy");$("#result").classList.remove("on");$("#btn-cancel").style.display="inline-flex";try{const{blob,meta}=await frankgptGenerate({prompt:raw||"cinematic test clip",ar:"9:16",seconds:5,refDataUrl:ref?ref.dataUrl:null,testMode:!!testMode,onStatus:msg=>stat(msg),onTick:s=>stat((testMode?"TEST · ":"FRANKGPT · 5s · ")+"Generating… "+s+"s\n"+(testMode?"Free sample":"Real AI video can take 1–5 min. Keep tab open."))});if(abort)throw new Error("Cancelled");const id=Date.now()+"-"+Math.random().toString(36).slice(2,8);const buf=await blob.arrayBuffer();await idbPut("v",{id,prompt:meta.prompt,ts:meta.ts,totalSec:meta.seconds,model:meta.model,engine:meta.engine,user:getUser()?.email||"",mime:blob.type||"video/mp4",data:buf});lastBlob=blob;$("#vid").src=URL.createObjectURL(blob);$("#result").classList.add("on");stat("Saved · "+FRANKGPT.label+(meta.testMode?" (test sample)":"")+" · v"+VERSION,false,true);renderRecent()}catch(e){if(!abort)stat("Failed.\n"+friendlyError(e),true);else stat("Cancelled.",true)}finally{busy=false;abort=false;$("#go").disabled=false;$("#go").classList.remove("busy");$("#btn-cancel").style.display="none"}}
+let clipSec=10;
+$$(".dur").forEach(b=>b.onclick=()=>{$$(".dur").forEach(x=>x.classList.remove("on"));b.classList.add("on");clipSec=Number(b.dataset.sec)||10});
+async function generate(testMode=false){if(busy)return;const raw=$("#prompt").value.trim();if(!testMode&&!raw&&!ref){stat("Add a prompt or photo first.",true);return}busy=true;abort=false;$("#go").disabled=true;$("#go").classList.add("busy");$("#result").classList.remove("on");$("#btn-cancel").style.display="inline-flex";try{const{blob,meta}=await frankgptGenerate({prompt:raw||"cinematic test clip",ar:"9:16",seconds:clipSec,refDataUrl:ref?ref.dataUrl:null,testMode:!!testMode,onStatus:msg=>stat(msg),onTick:s=>stat((testMode?"TEST · ":"FRANKGPT · "+clipSec+"s · ")+"Generating… "+s+"s\n"+(testMode?"Free sample":"Real AI · Puter free/credits · keep tab open."))});if(abort)throw new Error("Cancelled");const id=Date.now()+"-"+Math.random().toString(36).slice(2,8);const buf=await blob.arrayBuffer();await idbPut("v",{id,prompt:meta.prompt,ts:meta.ts,totalSec:meta.seconds,model:meta.model,engine:meta.engine,user:getUser()?.email||"",mime:blob.type||"video/mp4",data:buf});lastBlob=blob;$("#vid").src=URL.createObjectURL(blob);$("#result").classList.add("on");stat("Saved · "+FRANKGPT.label+(meta.testMode?" (test sample)":"")+" · v"+VERSION,false,true);renderRecent()}catch(e){if(!abort)stat("Failed.\n"+friendlyError(e),true);else stat("Cancelled.",true)}finally{busy=false;abort=false;$("#go").disabled=false;$("#go").classList.remove("busy");$("#btn-cancel").style.display="none"}}
 $("#go").onclick=()=>generate(false);
 $("#btn-test").onclick=()=>generate(true);
 $("#btn-cancel").onclick=()=>{if(busy){abort=true;stat("Cancelling…",true)}};
