@@ -1,23 +1,34 @@
 /**
  * FRANKGPT Engine
  * Product brand: FRANKGPT
- * Backend: Wan 2.7 via Puter.js (user-pays). No Supabase.
- * Real AI video often takes 1–5+ minutes — that is normal for this class of model.
+ * Backend: Puter.js (user-pays / free allowance) — Wan + Seedance-class models
+ * Clip length: 10–30 seconds (provider may clamp if model max is lower)
+ * No Supabase. Site stays on GitHub Pages.
  */
 export const FRANKGPT = {
   name: "FRANKGPT",
-  version: "1.1",
+  version: "1.2",
+  // Default T2V / I2V — Puter routes these (free for app owner; user pays or uses free quota)
   t2v: "wan-ai/wan2.7-t2v",
   i2v: "wan-ai/wan2.7-i2v",
-  label: "FRANKGPT · Wan 2.7",
-  maxSeconds: 15,
-  defaultSeconds: 5,
+  // Longer clips: Seedance-class often supports up to ~15–30s when available on Puter
+  t2vLong: "byteplus/dreamina-seedance-2-0-260128",
+  label: "FRANKGPT · Puter",
+  minSeconds: 10,
+  maxSeconds: 30,
+  defaultSeconds: 10,
   sizes: {
     "9:16": "720x1280",
     "16:9": "1280x720",
     "1:1": "720x720"
   }
 };
+
+export function clampSeconds(seconds) {
+  const n = Number(seconds);
+  const base = Number.isFinite(n) ? n : FRANKGPT.defaultSeconds;
+  return Math.min(Math.max(Math.round(base), FRANKGPT.minSeconds), FRANKGPT.maxSeconds);
+}
 
 export function enhancePrompt(raw, hasImage) {
   let p = (raw || "").trim();
@@ -44,7 +55,7 @@ export async function ensureAuth(onStatus) {
     if (puter.auth?.isSignedIn && (await puter.auth.isSignedIn())) return;
   } catch (_) {}
   if (puter.auth?.signIn) {
-    if (onStatus) onStatus("Sign in to Puter (needed for real generation)…\nAllow the popup.");
+    if (onStatus) onStatus("Sign in to Puter (free quota / credits)…\nAllow the popup.");
     await puter.auth.signIn({ attempt_temp_user_creation: true });
   }
 }
@@ -82,7 +93,15 @@ function withTimeout(p, ms, label) {
   let to;
   const t = new Promise((_, rej) => {
     to = setTimeout(
-      () => rej(new Error((label || "Request") + " timed out after " + Math.round(ms / 1000) + "s. Try 5s or Test sample.")),
+      () =>
+        rej(
+          new Error(
+            (label || "Request") +
+              " timed out after " +
+              Math.round(ms / 1000) +
+              "s. Try again or use Test sample."
+          )
+        ),
       ms
     );
   });
@@ -90,12 +109,22 @@ function withTimeout(p, ms, label) {
 }
 
 /**
+ * Pick model: longer requests prefer Seedance-class when available on Puter.
+ */
+function pickModel(seconds, hasImage) {
+  if (hasImage) return FRANKGPT.i2v;
+  // Prefer long-capable model when user asks for more than 15s
+  if (seconds > 15 && FRANKGPT.t2vLong) return FRANKGPT.t2vLong;
+  return FRANKGPT.t2v;
+}
+
+/**
  * @param {object} opts
  * @param {string} opts.prompt
  * @param {string} [opts.ar]
- * @param {number} [opts.seconds] - prefer 5 for faster results
+ * @param {number} [opts.seconds] - clamped to 10–30
  * @param {string|null} [opts.refDataUrl]
- * @param {boolean} [opts.testMode] - free instant sample from Puter (no real model)
+ * @param {boolean} [opts.testMode] - free instant sample (no credits)
  * @param {function} [opts.onTick]
  * @param {function} [opts.onStatus]
  */
@@ -108,8 +137,8 @@ export async function frankgptGenerate({
   onTick = null,
   onStatus = null
 } = {}) {
-  const sec = Math.min(Math.max(Number(seconds) || FRANKGPT.defaultSeconds, 2), FRANKGPT.maxSeconds);
-  const model = refDataUrl ? FRANKGPT.i2v : FRANKGPT.t2v;
+  const sec = clampSeconds(seconds);
+  const model = pickModel(sec, !!refDataUrl);
   const size = FRANKGPT.sizes[ar] || FRANKGPT.sizes["9:16"];
   const enhanced = enhancePrompt(prompt, !!refDataUrl);
 
@@ -121,10 +150,10 @@ export async function frankgptGenerate({
     prompt: enhanced || "A simple cinematic test clip",
     model,
     seconds: sec,
+    duration: sec,
     size
   };
   if (refDataUrl) puterOpts.input_reference = refDataUrl;
-  // Puter free sample path — verifies UI without spending credits
   if (testMode) {
     puterOpts.testMode = true;
     puterOpts.test_mode = true;
@@ -139,22 +168,23 @@ export async function frankgptGenerate({
 
   try {
     if (onStatus) {
-      if (testMode) onStatus("FRANKGPT test mode · free sample (instant)…");
-      else onStatus(
-        "FRANKGPT · " + sec + "s · Generating…\n" +
-        "Real AI video often takes 1–5 minutes.\n" +
-        "Keep this tab open. Do not refresh."
-      );
+      if (testMode) {
+        onStatus("FRANKGPT test mode · free sample (instant)…");
+      } else {
+        onStatus(
+          "FRANKGPT · " +
+            sec +
+            "s (max 30) · Generating via Puter…\n" +
+            "Real AI video often takes 1–5+ minutes.\n" +
+            "Keep this tab open. Do not refresh."
+        );
+      }
     }
 
-    // Test mode: shorter client timeout; real: allow up to ~8 min (Puter allows ~10)
-    const waitMs = testMode ? 60000 : 480000;
+    // Longer clips need more wait; Puter upstream ~10 min
+    const waitMs = testMode ? 60000 : Math.min(600000, 180000 + sec * 15000);
 
-    const result = await withTimeout(
-      puter.ai.txt2vid(puterOpts),
-      waitMs,
-      "FRANKGPT"
-    );
+    const result = await withTimeout(puter.ai.txt2vid(puterOpts), waitMs, "FRANKGPT");
     const blob = await resultToBlob(result);
     return {
       blob,
@@ -178,10 +208,10 @@ export function friendlyError(e) {
   const m = String(e?.message || e || "");
   const code = e?.code || e?.errorCode || "";
   if (code === "insufficient_funds" || /insufficient/i.test(m)) {
-    return "Not enough Puter credits.\nAdd credits at puter.com — or use Test sample (free).";
+    return "Not enough Puter credits.\nAdd free/paid credits at puter.com — or use Test sample.";
   }
   if (code === "upstream_timeout" || /timed out|timeout/i.test(m)) {
-    return "Provider took too long (common under load).\nTry again with 5s, or Test sample first.";
+    return "Provider took too long.\nTry 10s again, or Test sample first.";
   }
   if (code === "popup_blocked") return "Allow popups for Puter sign-in, then try again.";
   if (/moderation/i.test(m) || code === "moderation_flagged") {
