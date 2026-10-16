@@ -114,13 +114,13 @@ function renderServerState() {
   if (showGoogle) initGoogle();
   const off = $("#gate-offline");
   off.style.display = server.online ? "none" : "";
-  off.textContent = server.online ? "" : "FRANKGPT server not connected — you can still look around as a guest.";
+  off.textContent = server.online ? "" : "The FRANK engine is offline right now. You can still look around as a guest.";
   $("#gate-or").style.display = server.online ? "" : "none";
   $("#gate-signin").style.display = server.online ? "" : "none";
   // engine badge + settings status
   const b = $("#engine-badge");
   let status;
-  if (!server.online) { status = "Server: not connected.\nGeneration is unavailable until a FRANKGPT server is reachable."; b.style.display = "none"; }
+  if (!server.online) { status = "FRANK engine: offline.\nVideos can't be generated until the FRANK server is reachable."; b.style.display = "none"; }
   else if (server.ready) {
     status = "Server: connected · engine ready" + (server.engine?.synthetic ? " (SYNTHETIC test engine — not AI)" : "");
     b.style.display = ""; b.textContent = server.engine?.synthetic ? "TEST ENGINE" : "ENGINE READY";
@@ -446,4 +446,5 @@ $("#btn-wipe").onclick = async () => {
   renderLib(); renderRecent(); setMsg("Cleared.", false, true);
 };
 
+if (window.Capacitor || /^(capacitor|ionic):/.test(location.protocol) || location.hostname === "localhost" && location.protocol === "https:") { $("#install-card")?.remove(); $("#gate-apk")?.remove(); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});

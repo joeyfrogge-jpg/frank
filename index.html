@@ -157,6 +157,7 @@ button{cursor:pointer;border:0;background:none}
   <div class="gate-or" id="gate-or">OR</div>
   <p class="gate-legal" id="gate-legal">By continuing, you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
   <div class="gate-signin" id="gate-signin">Already have an account? <span>Sign in →</span></div>
+  <div class="gate-signin" id="gate-apk" style="margin-top:8px;color:var(--dim)"><a href="https://github.com/joeyfrogge-jpg/frank/releases/download/apk-latest/frank.apk" style="color:inherit">Download the Android app ↓</a></div>
   <div class="gate-signin" id="gate-skip" style="margin-top:8px;color:var(--dim)">Continue as guest →</div>
 </div>
 <div class="app" id="app" style="display:none">
@@ -217,6 +218,11 @@ button{cursor:pointer;border:0;background:none}
       <div class="card">
         <label>Default length<select id="set-dur"><option value="10" selected>10s</option><option value="20">20s</option><option value="30">30s</option></select></label>
         <label>Format<select id="set-ar"><option value="9:16" selected>Vertical</option><option value="16:9">Wide</option><option value="1:1">Square</option></select></label>
+      </div>
+      <div class="card" id="install-card">
+        <p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Get the app</p>
+        <a class="soft primary" style="display:block;text-align:center;text-decoration:none;color:inherit;margin-bottom:8px" href="https://github.com/joeyfrogge-jpg/frank/releases/download/apk-latest/frank.apk">Download Android APK</a>
+        <p class="h">iPhone: open this page in Safari → Share → Add to Home Screen.</p>
       </div>
       <div class="card">
         <label>FRANKGPT server<input id="set-api" placeholder="https://your-server.example (blank = this site)" autocomplete="off" inputmode="url"></label>

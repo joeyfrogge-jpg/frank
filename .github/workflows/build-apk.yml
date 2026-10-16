@@ -3,9 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       api_base:
-        description: "Your FRANKGPT server URL the APK should talk to (https://...)"
-        required: true
+        description: "FRANK server URL the APK talks to (blank = repo variable FRANK_API_BASE, else UI-only)"
+        required: false
   push:
+    branches: [main]
     paths:
       - 'index.html'
       - 'frank-app.js'
@@ -20,6 +21,9 @@ on:
 env:
   # push-triggered builds use the repo variable FRANK_API_BASE (Settings -> Variables)
   API_BASE: ${{ github.event.inputs.api_base || vars.FRANK_API_BASE }}
+
+permissions:
+  contents: write
 
 jobs:
   apk:
@@ -40,12 +44,8 @@ jobs:
           mkdir -p www/icons
           cp index.html frank-app.js config.js manifest.json sw.js terms.html privacy.html www/
           cp icons/*.png www/icons/
-          if [ -z "$API_BASE" ]; then
-            echo "::error::No API base. Run the workflow manually with api_base, or set repo variable FRANK_API_BASE."
-            exit 1
-          fi
-          # the APK has no server of its own: point it at yours
-          sed -i "s#API_BASE: \"\"#API_BASE: \"${API_BASE%/}\"#" www/config.js
+          # an APK has no server of its own: if config.js has no API_BASE, use the one given here
+          if [ -n "$API_BASE" ]; then sed -i "s#API_BASE: \"\"#API_BASE: \"${API_BASE%/}\"#" www/config.js; fi
           grep -n API_BASE www/config.js
           ! grep -ril puter www || { echo "::error::Puter reference found in bundle"; exit 1; }
       - name: Capacitor Android
@@ -60,8 +60,13 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk frank.apk
+      - name: Publish to Releases (stable download link)
+        uses: softprops/action-gh-release@v2
         with:
-          name: frank-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          tag_name: apk-latest
+          name: FRANK Android app (latest)
+          body: "Latest FRANK debug APK. Install: https://github.com/${{ github.repository }}/releases/download/apk-latest/frank.apk"
+          files: frank.apk
+          make_latest: false

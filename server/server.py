@@ -839,7 +839,7 @@ def main():
     db.x("UPDATE jobs SET status='failed', message='Server restarted during generation.' WHERE status='running'")
     threading.Thread(target=worker_loop, daemon=True).start()
     threading.Thread(target=cleanup_loop, daemon=True).start()
-    host, port = ENV("FRANK_HOST", "0.0.0.0"), int(ENV("FRANK_PORT", "8000"))
+    host, port = ENV("FRANK_HOST", "0.0.0.0"), int(ENV("FRANK_PORT", ENV("PORT", "8000")))
     srv = ThreadingHTTPServer((host, port), H)
     h = ADAPTER.health()
     print("%s  http://%s:%d  provider=%s ready=%s" % (VERSION, host, port, h["provider"], h["ready"]))
