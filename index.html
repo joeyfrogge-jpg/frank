@@ -1,1 +1,357 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>FRANKGPT</title>
+<link rel="manifest" href="./manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://js.puter.com/v2/"></script>
+<style>
+:root{--bg:#000;--panel:#0c0c0e;--elev:#151518;--card:#121216;--line:rgba(255,255,255,.1);--text:#f5f5f7;--muted:#9ca3af;--dim:#6b7280;--yellow:#f5c518;--purple:#a78bfa;--blue:#60a5fa;--lav:#c4b5fd;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--nav:calc(62px + var(--safe-b));--font:Inter,-apple-system,system-ui,sans-serif;--hand:Caveat,cursive}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font)}
+button,input,textarea{font:inherit;color:inherit;border:0;background:none}
+button{cursor:pointer}
+.app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:var(--safe-t)}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav)+12px)}
+.page{display:none}.page.on{display:block}
+.gate{position:fixed;inset:0;z-index:100;background:#000;overflow-y:auto;padding:calc(24px + var(--safe-t)) 20px calc(32px + var(--safe-b));display:flex;flex-direction:column;align-items:center}
+.gate.hidden{display:none}
+.gate-top{width:100%;max-width:400px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.gate-logo{font-family:var(--hand);font-size:32px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px}
+.gate-logo .crown{color:var(--yellow);font-size:26px}
+.gate h1{margin:12px 0 6px;font-size:clamp(32px,9vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1.05;text-align:center;text-transform:uppercase}
+.gate h1 .u{text-decoration:underline;text-decoration-color:var(--yellow);text-underline-offset:6px;text-decoration-thickness:4px}
+.gate .tag{color:var(--lav);font-size:14px;text-align:center;margin:0 0 20px}
+.gate-cards{display:flex;gap:10px;width:100%;max-width:400px;margin-bottom:28px;overflow-x:auto;padding:4px 0}
+.gcard{flex:0 0 120px;border-radius:16px;overflow:hidden;border:1px solid var(--line);position:relative;aspect-ratio:.85}
+.gcard img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.gcard .sh{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.9))}
+.gcard .bd{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:10px}
+.gcard strong{font-size:11px;font-weight:700;text-transform:uppercase;line-height:1.2}
+.gate-btns{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
+.btn-g{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 18px;border-radius:999px;background:linear-gradient(135deg,#c4b5fd,#a78bfa);color:#1a1025;font-weight:700;font-size:15px}
+.btn-e{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 18px;border-radius:999px;border:1.5px solid rgba(255,255,255,.25);font-weight:600;font-size:15px;color:#e5e5ea}
+.gate-or{display:flex;align-items:center;gap:12px;width:100%;max-width:360px;margin:8px 0;color:var(--dim);font-size:12px;font-weight:600}
+.gate-or::before,.gate-or::after{content:"";flex:1;height:1px;background:var(--line)}
+.gate-legal{font-size:11px;color:var(--dim);text-align:center;margin-top:8px;max-width:300px}
+.gate-legal a{color:var(--lav)}
+.gate-signin{margin-top:16px;font-size:13px;color:var(--lav)}
+.gate-signin span{text-decoration:underline;cursor:pointer}
+.gate-dev{margin-top:20px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);color:var(--dim);font-size:12px}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+.logo-wrap{display:flex;align-items:center;gap:6px}
+.logo-crown{font-size:22px;color:var(--yellow)}
+.logo-text{font-family:var(--hand);font-size:28px;font-weight:700}
+.top-right{display:flex;align-items:center;gap:10px}
+.plan-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);font-size:12px;font-weight:600}
+.plan-pill .bolt{color:var(--yellow)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--elev);border:1px solid var(--line);display:grid;place-content:center;overflow:hidden;font-size:14px}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.share-pill{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:linear-gradient(135deg,#c4b5fd,#a78bfa);color:#1a1025;font-size:12px;font-weight:700}
+.hero{padding:4px 18px 12px}
+.hero-side{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.hero h1{margin:0;font-size:clamp(26px,7.5vw,34px);font-weight:800;letter-spacing:-.03em;line-height:1.15;text-transform:uppercase}
+.hero h1 .u{text-decoration:underline;text-decoration-color:var(--yellow);text-underline-offset:4px;text-decoration-thickness:3px}
+.hero .sub{margin:6px 0 0;color:var(--muted);font-size:14px}
+.hero-note{font-family:var(--hand);font-size:14px;color:var(--lav);line-height:1.25;text-align:right;max-width:100px}
+.composer{margin:0 14px;padding:4px;border-radius:999px;background:linear-gradient(180deg,#1a1a1e,#121214);border:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.composer .ico{width:40px;height:40px;border-radius:50%;display:grid;place-content:center;color:var(--muted);flex-shrink:0}
+#prompt{flex:1;min-height:40px;max-height:80px;padding:10px 0;background:transparent;resize:none;font-size:15px;outline:none}
+#prompt::placeholder{color:var(--dim)}
+.go{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));display:grid;place-content:center;flex-shrink:0}
+.go:disabled{opacity:.4}
+.go .spin{width:18px;height:18px;border:2.5px solid #fff;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;display:none}
+.go.busy .spin{display:block}.go.busy .arr{display:none}@keyframes sp{to{transform:rotate(360deg)}}
+.actions{display:flex;gap:8px;padding:12px 14px 0;overflow-x:auto}
+.act{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:13px;font-weight:600;color:#d1d1d6}
+.act.primary{background:rgba(167,139,250,.22);border-color:rgba(167,139,250,.45);color:#e9e0ff}
+.status{margin:10px 14px 0;padding:11px 13px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:13px;color:var(--muted);white-space:pre-wrap;display:none;font-family:ui-monospace,Menlo,monospace}
+.status.on{display:block}.status.err{border-color:rgba(248,113,113,.35);color:#fecaca;background:rgba(248,113,113,.08)}.status.ok{border-color:rgba(52,211,153,.35);color:#a7f3d0;background:rgba(52,211,153,.08)}
+.result{margin:10px 14px 0;display:none}.result.on{display:block}
+.result video{width:100%;border-radius:16px;background:#000;max-height:50vh;object-fit:contain}
+.result-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.soft{padding:10px 14px;border-radius:12px;background:var(--elev);border:1px solid var(--line);font-size:13px;font-weight:600}
+.soft.danger{color:#f87171}
+.sec{padding:20px 14px 0}
+.sec-h{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.sec-h h2{margin:0;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.sec-h .hand{font-family:var(--hand);font-size:16px;color:var(--lav);margin-left:auto}
+.qi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qi{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:1.05;border:1px solid var(--line);text-align:left}
+.qi img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.qi .shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 25%,rgba(0,0,0,.88))}
+.qi .body{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:12px}
+.qi strong{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.25}
+.recent-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.rc{flex:0 0 130px;border-radius:14px;overflow:hidden;background:var(--elev);border:1px solid var(--line);position:relative}
+.rc video{width:100%;aspect-ratio:16/10;object-fit:cover;background:#111;display:block}
+.rc .dur{position:absolute;bottom:6px;left:6px;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.7);font-size:10px;font-weight:600}
+.rc .cap{padding:6px 8px;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.see{font-size:12px;color:var(--muted);font-weight:600;margin-left:auto}
+.ref-banner{margin:14px 14px 0;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line);display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+.ref-banner .thumbs{display:flex;gap:4px}
+.ref-banner .thumbs img{width:36px;height:36px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
+.ex-head{padding:8px 16px 0}
+.ex-head h1{margin:0;font-size:clamp(28px,8vw,36px);font-weight:800;text-transform:uppercase;letter-spacing:-.03em}
+.ex-head h1 .u{text-decoration:underline;text-decoration-color:var(--yellow);text-underline-offset:4px;text-decoration-thickness:3px}
+.ex-head .sub{margin:6px 0 0;color:var(--lav);font-size:14px;font-style:italic}
+.ex-filters{display:flex;gap:8px;padding:14px 16px;overflow-x:auto}
+.filt{flex-shrink:0;padding:8px 14px;border-radius:999px;border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);background:rgba(255,255,255,.03)}
+.filt.on{background:rgba(167,139,250,.25);border-color:rgba(167,139,250,.5);color:#e9e0ff}
+.feed{padding:0 14px 20px;display:flex;flex-direction:column;gap:16px}
+.post{border-radius:16px;border:1px solid var(--line);background:var(--card);overflow:hidden}
+.post-h{display:flex;align-items:center;gap:10px;padding:12px 12px 8px}
+.post-av{width:36px;height:36px;border-radius:50%;background:var(--elev);display:grid;place-content:center;font-size:16px}
+.post-meta{flex:1}.post-meta .who{font-weight:700;font-size:14px}.post-meta .when{font-size:11px;color:var(--dim)}
+.post video{width:100%;aspect-ratio:1;object-fit:cover;background:#111;display:block}
+.post-cap{padding:10px 12px 4px;font-size:14px}
+.post-acts{display:flex;align-items:center;gap:16px;padding:8px 12px 12px;font-size:13px;color:var(--muted)}
+.ex-empty{text-align:center;padding:40px 20px}
+.ex-empty h3{margin:0 0 6px;font-size:20px;font-weight:800;text-transform:uppercase}
+.ex-empty p{margin:0;color:var(--lav);font-size:14px}
+.set-head{padding:8px 16px 12px}
+.set-head h1{margin:12px 0 0;font-size:clamp(26px,7vw,32px);font-weight:800;text-transform:uppercase}
+.set-head h1 .u{text-decoration:underline;text-decoration-color:var(--yellow);text-underline-offset:4px;text-decoration-thickness:3px}
+.set-head .sub{margin:6px 0 0;color:var(--lav);font-size:14px}
+.prof{display:flex;align-items:center;gap:12px;margin:0 16px 16px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.prof-av{width:48px;height:48px;border-radius:50%;background:var(--elev);display:grid;place-content:center;font-size:22px;overflow:hidden}
+.prof-av img{width:100%;height:100%;object-fit:cover}
+.prof-info{flex:1}.prof-info .nm{font-weight:700}.prof-info .em{font-size:12px;color:var(--muted)}
+.btn-edit{padding:8px 14px;border-radius:999px;background:rgba(167,139,250,.25);border:1px solid rgba(167,139,250,.4);font-size:12px;font-weight:700;color:#e9e0ff}
+.set-group{margin:0 16px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line);overflow:hidden}
+.set-group .lab{padding:10px 14px 4px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--lav);text-transform:uppercase}
+.set-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.05);width:100%;text-align:left}
+.set-row:first-of-type{border-top:0}
+.set-row .ic{font-size:18px;width:24px;text-align:center}
+.set-row .tx{flex:1;font-size:14px;font-weight:500}
+.set-row .chev{color:var(--dim)}
+.set-row .tog{width:44px;height:26px;border-radius:999px;background:rgba(255,255,255,.12);position:relative;flex-shrink:0}
+.set-row .tog.on{background:rgba(167,139,250,.6)}
+.set-row .tog::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
+.set-row .tog.on::after{transform:translateX(18px)}
+.btn-signout{display:block;width:calc(100% - 32px);margin:8px 16px 24px;padding:14px;border-radius:14px;border:1px solid var(--line);text-align:center;font-weight:600;color:#f87171}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:#0a0a0c;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + var(--safe-b));border:1px solid var(--line)}
+.plans-head{text-align:center;margin-bottom:16px}
+.plans-head h2{margin:0;font-size:26px;font-weight:800;text-transform:uppercase}
+.plans-head h2 .u{text-decoration:underline;text-decoration-color:var(--yellow);text-underline-offset:4px;text-decoration-thickness:3px}
+.plans-head p{margin:6px 0 0;color:var(--lav);font-size:13px}
+.tier{border-radius:16px;border:1px solid var(--line);background:var(--card);padding:16px;margin-bottom:12px;position:relative}
+.tier.hot{border-color:rgba(167,139,250,.55)}
+.tier.plat{border-color:rgba(245,197,24,.45)}
+.tier .badge{position:absolute;top:12px;right:12px;font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;background:rgba(167,139,250,.3);color:#e9e0ff}
+.tier h3{margin:0;font-size:18px;font-weight:800;text-transform:uppercase}
+.tier .price{font-size:28px;font-weight:800;margin:4px 0 2px}
+.tier .price span{font-size:13px;font-weight:500;color:var(--muted)}
+.tier .gens{font-size:12px;color:var(--lav);margin-bottom:10px}
+.tier ul{margin:0;padding:0;list-style:none}
+.tier ul li{font-size:13px;color:var(--muted);padding:3px 0}
+.tier .buy{margin-top:12px;width:100%;padding:12px;border-radius:999px;background:linear-gradient(135deg,#c4b5fd,#a78bfa);color:#1a1025;font-weight:700;font-size:14px}
+.tier .buy.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.2);color:#e5e5ea}
+.plans-foot{text-align:center;font-family:var(--hand);font-size:16px;color:var(--yellow);margin:8px 0 4px}
+.nav{position:fixed;left:0;right:0;bottom:0;padding:6px 0 var(--safe-b);background:rgba(8,8,10,.95);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:flex;z-index:30}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;color:var(--dim);font-size:10px;font-weight:600}
+.nav button.on{color:#c4b5fd}
+.nav button .ico{font-size:20px;line-height:1}
+.empty{padding:28px 14px;border-radius:14px;border:1px dashed var(--line);text-align:center;color:var(--muted);font-size:13px}
+.empty strong{display:block;color:var(--text);margin-bottom:4px;font-size:14px}
+.pad{padding:12px 16px 24px}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <div class="gate-top"><div class="gate-logo"><span class="crown">👑</span> FRANK</div><div style="color:var(--yellow);font-size:22px">📷✨</div></div>
+  <h1>MAKE SOMETHING<br><span class="u">REAL</span>.</h1>
+  <p class="tag">Your ideas. Your videos. No boring stuff. 😊</p>
+  <div class="gate-cards">
+    <div class="gcard"><img src="https://images.unsplash.com/photo-1497752531616-c3b0b6d5b4b3?w=300&q=70" alt=""><div class="sh"></div><div class="bd"><strong>Raccoons in suits →</strong></div></div>
+    <div class="gcard"><img src="https://images.unsplash.com/photo-1514565131-fce0801e5785?w=300&q=70" alt=""><div class="sh"></div><div class="bd"><strong>Turn a photo into a video →</strong></div></div>
+    <div class="gcard"><img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=300&q=70" alt=""><div class="sh"></div><div class="bd"><strong>Animals doing human things →</strong></div></div>
+  </div>
+  <div class="gate-btns">
+    <button type="button" class="btn-g" id="btn-google">🔵 Continue with Google</button>
+    <button type="button" class="btn-e" id="btn-email">✉️ Continue with email</button>
+  </div>
+  <div class="gate-or">OR</div>
+  <p class="gate-legal">By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</p>
+  <p class="gate-signin">Already have an account? <span id="btn-signin-link">Sign in →</span></p>
+  <button type="button" class="gate-dev" id="dev-skip">Dev: skip Google (test UI)</button>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <div class="scroll">
+    <section class="page on" id="p-home">
+      <header class="top">
+        <div class="logo-wrap"><span class="logo-crown">👑</span><div class="logo-text">FRANK</div></div>
+        <div class="top-right">
+          <button type="button" class="plan-pill" id="btn-plan"><span class="bolt">⚡</span> <span id="plan-label">Free plan</span></button>
+          <button type="button" class="avatar" id="btn-avatar">👤</button>
+        </div>
+      </header>
+      <div class="hero"><div class="hero-side"><div>
+        <h1>WHAT DO YOU<br>WANT TO <span class="u">CREATE</span>?</h1>
+        <p class="sub">Type it. Drop it. Make it real. 😊</p>
+      </div><div class="hero-note">REAL IDEAS.<br>REAL VIBES.<br>NO BORING<br>VIDEOS.</div></div></div>
+      <div class="composer">
+        <button type="button" class="ico" id="btn-ref">🖼</button>
+        <input type="file" id="ref-in" accept="image/*" capture="environment" hidden>
+        <textarea id="prompt" placeholder='Describe your idea…' rows="1"></textarea>
+        <button type="button" class="go" id="go"><span class="spin"></span><span class="arr">→</span></button>
+      </div>
+      <div id="refs-preview" style="display:none;padding:8px 14px 0"></div>
+      <div class="actions">
+        <button type="button" class="act primary" id="btn-surprise">🎲 Surprise me</button>
+        <button type="button" class="act" id="btn-ref2">🖼 Reference photo</button>
+        <button type="button" class="act" id="btn-style">✨ Style</button>
+        <button type="button" class="act" id="btn-mood">😊 Mood</button>
+      </div>
+      <div class="status" id="stat" role="status"></div>
+      <div class="result" id="result">
+        <video id="vid" controls playsinline></video>
+        <div class="result-actions">
+          <button class="soft" type="button" id="btn-dl">Download</button>
+          <button class="soft" type="button" id="btn-share">Share to Explore</button>
+          <button class="soft danger" type="button" id="btn-cancel" style="display:none">Cancel</button>
+        </div>
+      </div>
+      <div class="sec"><div class="sec-h"><span>💡</span><h2>Quick Ideas</h2><span class="hand">just for fun →</span></div>
+        <div class="qi-grid">
+          <button type="button" class="qi" data-p="A raccoon in a sharp suit and sunglasses, cinematic lighting"><img src="https://images.unsplash.com/photo-1497752531616-c3b0b6d5b4b3?w=400&q=70" alt="" loading="lazy"><div class="shade"></div><div class="body"><strong>Raccoons in suits →</strong></div></button>
+          <button type="button" class="qi" data-p="Turn this photo into a cinematic video" data-need-ref="1"><img src="https://images.unsplash.com/photo-1514565131-fce0801e5785?w=400&q=70" alt="" loading="lazy"><div class="shade"></div><div class="body"><strong>Turn a photo into a video →</strong></div></button>
+          <button type="button" class="qi" data-p="Animals doing human things, golden retriever on the beach"><img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&q=70" alt="" loading="lazy"><div class="shade"></div><div class="body"><strong>Animals doing human things →</strong></div></button>
+          <button type="button" class="qi" data-p="Moody bedroom at sunset, cinematic mood video"><img src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&q=70" alt="" loading="lazy"><div class="shade"></div><div class="body"><strong>Mood videos →</strong></div></button>
+        </div>
+      </div>
+      <div class="sec" style="padding-bottom:8px"><div class="sec-h"><span>⭐</span><h2>Your Recent Creations</h2><button type="button" class="see" data-nav="lib">SEE ALL →</button></div><div id="recent"></div></div>
+      <div class="ref-banner"><span style="font-size:22px">📷</span><div style="flex:1">Add a reference photo for even better vibes.</div></div>
+    </section>
+
+    <section class="page" id="p-lib"><div class="pad"><h2 style="margin:0 0 4px;font-size:24px;font-weight:800">Library</h2><p style="margin:0 0 16px;color:var(--muted);font-size:13px">Saved on this device.</p><div id="library" style="display:grid;gap:12px"></div></div></section>
+
+    <section class="page" id="p-explore">
+      <header class="top">
+        <div class="logo-wrap"><span class="logo-crown">👑</span><div class="logo-text">FRANK</div></div>
+        <div class="top-right"><button type="button" class="share-pill" id="btn-share-ex">+ SHARE YOUR CREATION</button><button type="button" class="avatar" id="btn-avatar2">👤</button></div>
+      </header>
+      <div class="ex-head"><h1><span class="u">EXPLORE</span></h1><p class="sub">Good ideas are meant to be shared.</p></div>
+      <div class="ex-filters">
+        <button type="button" class="filt on" data-f="all">✨ All</button>
+        <button type="button" class="filt" data-f="images">🖼 Images</button>
+        <button type="button" class="filt" data-f="videos">▶ Videos</button>
+        <button type="button" class="filt" data-f="trending">🔥 Trending</button>
+      </div>
+      <div class="feed" id="explore"></div>
+    </section>
+
+    <section class="page" id="p-more">
+      <div class="set-head">
+        <div style="display:flex;align-items:center;gap:8px"><button type="button" data-nav="home" style="font-size:18px;color:var(--muted)">←</button><div class="logo-wrap"><span class="logo-crown">👑</span><div class="logo-text" style="font-size:22px">FRANK</div></div></div>
+        <h1>YOUR <span class="u">SETTINGS</span> ⭐</h1>
+        <p class="sub">Make Frank feel like you. 😊</p>
+      </div>
+      <div class="prof"><div class="prof-av" id="prof-av">👤</div><div class="prof-info"><div class="nm" id="prof-name">Guest</div><div class="em" id="prof-email">—</div></div><button type="button" class="btn-edit">Edit profile</button></div>
+      <div class="set-group"><div class="lab">Account</div>
+        <button type="button" class="set-row"><span class="ic">👤</span><span class="tx">Profile details</span><span class="chev">›</span></button>
+        <button type="button" class="set-row"><span class="ic">🔗</span><span class="tx">Connected accounts</span><span class="chev">›</span></button>
+        <button type="button" class="set-row"><span class="ic">🔒</span><span class="tx">Password & security</span><span class="chev">›</span></button>
+      </div>
+      <div class="set-group"><div class="lab">Creation Preferences</div>
+        <button type="button" class="set-row"><span class="ic">▶</span><span class="tx">Default video style</span><span class="chev">›</span></button>
+        <button type="button" class="set-row"><span class="ic">⏱</span><span class="tx">Video length</span><span class="chev">›</span></button>
+        <button type="button" class="set-row"><span class="ic">😊</span><span class="tx">Default mood</span><span class="chev">›</span></button>
+        <button type="button" class="set-row"><span class="ic">🖼</span><span class="tx">Reference photo behavior</span><span class="chev">›</span></button>
+      </div>
+      <div class="set-group"><div class="lab">App Experience</div>
+        <button type="button" class="set-row"><span class="ic">🌙</span><span class="tx">Theme: Dark</span><span class="chev">›</span></button>
+        <button type="button" class="set-row"><span class="ic">📳</span><span class="tx">Haptic feedback</span><span class="tog on"></span></button>
+        <button type="button" class="set-row"><span class="ic">☁️</span><span class="tx">Auto-save creations</span><span class="tog on"></span></button>
+      </div>
+      <div class="set-group"><div class="lab">Privacy & Data</div>
+        <button type="button" class="set-row"><span class="ic">🛡</span><span class="tx">Private creations</span><span class="tog on"></span></button>
+        <button type="button" class="set-row"><span class="ic">📁</span><span class="tx">Manage saved creations</span><span class="chev">›</span></button>
+        <button type="button" class="set-row"><span class="ic">⬇️</span><span class="tx">Download my data</span><span class="chev">›</span></button>
+      </div>
+      <div class="set-group"><div class="lab">Support</div>
+        <button type="button" class="set-row"><span class="ic">❓</span><span class="tx">Help center</span><span class="chev">›</span></button>
+        <button type="button" class="set-row"><span class="ic">💬</span><span class="tx">Send feedback</span><span class="chev">›</span></button>
+      </div>
+      <div class="set-group"><div class="lab">Plan & Engine</div>
+        <button type="button" class="set-row" id="btn-upgrade"><span class="ic">⚡</span><span class="tx" id="more-plan">Free · limited</span><span class="chev">›</span></button>
+        <div class="set-row"><span class="ic">🧠</span><span class="tx" id="engine-label">FRANKGPT · Wan 2.7</span></div>
+      </div>
+      <button type="button" class="btn-signout" id="btn-signout">Sign out</button>
+    </section>
+  </div>
+  <nav class="nav" id="nav">
+    <button type="button" data-n="home" class="on"><span class="ico">🏠</span>Home</button>
+    <button type="button" data-n="lib"><span class="ico">📁</span>Library</button>
+    <button type="button" data-n="explore"><span class="ico">🧭</span>Explore</button>
+    <button type="button" data-n="more"><span class="ico">✨</span>More</button>
+  </nav>
+</div>
+
+<div class="modal-bg" id="plans-modal">
+  <div class="modal">
+    <div class="plans-head"><div style="font-size:22px;margin-bottom:4px">👑</div><h2>PICK YOUR <span class="u">POWER</span>.</h2><p>More ideas. More magic. Your way.</p></div>
+    <div class="tier"><h3>Free</h3><div class="price">$0 <span>/ month</span></div><div class="gens">✨ 3–5 generations per day</div><ul><li>💧 Watermark</li><li>📦 Basic models</li><li>📢 Ads optional</li></ul><button class="buy ghost" type="button" data-tier="free">START CREATING →</button></div>
+    <div class="tier"><h3>Plus</h3><div class="price">$9.99 <span>/ month</span></div><div class="gens">✨ 50 generations per month</div><ul><li>🚫 No watermark</li><li>▶ Longer clips</li><li>👤 Priority queue</li></ul><button class="buy" type="button" data-tier="plus">GET PLUS →</button></div>
+    <div class="tier hot"><span class="badge">MOST POPULAR</span><h3>Premium</h3><div class="price">$24.99 <span>/ month</span></div><div class="gens">✨ 200 generations per month</div><ul><li>🖼 Image-to-video</li><li>🎨 Style / Mood</li><li>⚡ Faster models</li></ul><button class="buy" type="button" data-tier="premium">GO PREMIUM →</button></div>
+    <div class="tier plat"><h3>👑 Platinum</h3><div class="price">$49.99 <span>/ month</span></div><div class="gens">✨ Unlimited generations</div><ul><li>⭐ Highest quality models</li><li>🕐 Earliest access</li><li>💼 Commercial license</li><li>🔗 Master-link owner benefits</li></ul><button class="buy" type="button" data-tier="platinum">UNLOCK PLATINUM →</button></div>
+    <p class="plans-foot">👑 Your next big idea starts here ✨</p>
+    <button class="soft" type="button" id="plans-close" style="width:100%;margin-top:8px">Close</button>
+  </div>
+</div>
+
+<script type="module">
+import { FRANKGPT, frankgptGenerate, friendlyError } from "./frankgpt-engine.js";
+const MASTER_CODE = "FRANK-MASTER-2026";
+const VERSION = FRANKGPT.version;
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
+const dbp=new Promise((res,rej)=>{const r=indexedDB.open("frank-v2",1);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("v"))d.createObjectStore("v",{keyPath:"id"});if(!d.objectStoreNames.contains("explore"))d.createObjectStore("explore",{keyPath:"id"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const tx=async(store,mode,fn)=>{const d=await dbp;return new Promise((res,rej)=>{const t=d.transaction(store,mode);const q=fn(t.objectStore(store));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
+const idbPut=(s,o)=>tx(s,"readwrite",st=>st.put(o));
+const idbAll=async s=>(await tx(s,"readonly",st=>st.getAll())||[]).sort((a,b)=>(b.ts||0)-(a.ts||0));
+const idbDel=(s,id)=>tx(s,"readwrite",st=>st.delete(id));
+function getUser(){return LS.get("frank_user",null)}
+function setUser(u){LS.set("frank_user",u)}
+function getPlan(){const u=getUser();if(!u)return"free";if(u.master||u.plan==="platinum")return"platinum";return u.plan||"free"}
+function updatePlanUI(){const p=getPlan();const labels={free:"Free plan",plus:"Plus",premium:"Premium",platinum:"Platinum"};$("#plan-label").textContent=labels[p]||"Free plan";$("#more-plan").textContent=p==="platinum"?"Platinum · Unlimited":p==="premium"?"Premium · 200/mo":p==="plus"?"Plus · 50/mo":"Free · limited";const eng=$("#engine-label");if(eng)eng.textContent=FRANKGPT.label;const u=getUser();if(u){$("#prof-name").textContent=u.name||"User";$("#prof-email").textContent=u.email||"";if(u.picture){$("#prof-av").innerHTML=`<img src="${u.picture}" alt="">`;$("#btn-avatar").innerHTML=`<img src="${u.picture}" alt="">`;const a2=$("#btn-avatar2");if(a2)a2.innerHTML=`<img src="${u.picture}" alt="">`}}}
+(function(){const params=new URLSearchParams(location.search);if(params.get("master")===MASTER_CODE)LS.set("frank_master_pending",true)})();
+function enterApp(){const u=getUser();if(!u){$("#gate").classList.remove("hidden");$("#app").style.display="none";return}$("#gate").classList.add("hidden");$("#app").style.display="flex";updatePlanUI();renderRecent();if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{})}
+function skipToApp(){setUser({sub:"dev",name:"Joey",email:"joey@email.com",picture:"",plan:LS.get("frank_master_pending")?"platinum":"free",master:!!LS.get("frank_master_pending"),ts:Date.now()});if(LS.get("frank_master_pending"))LS.set("frank_master_pending",false);enterApp()}
+$("#dev-skip").onclick=skipToApp;$("#btn-google").onclick=skipToApp;$("#btn-email").onclick=()=>alert("Email sign-in coming soon.");$("#btn-signin-link").onclick=skipToApp;$("#btn-signout").onclick=()=>{setUser(null);location.href=location.pathname};
+function nav(n){$$(".page").forEach(p=>p.classList.toggle("on",p.id==="p-"+n));$$("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.n===n));if(n==="lib")renderLib();if(n==="explore")renderExplore();if(n==="home")renderRecent();if(n==="more")updatePlanUI()}
+$$("#nav button").forEach(b=>b.onclick=()=>nav(b.dataset.n));$$("[data-nav]").forEach(b=>b.onclick=()=>nav(b.dataset.nav));
+$$(".tog").forEach(t=>t.onclick=e=>{e.stopPropagation();t.classList.toggle("on")});
+let ref=null;
+function showRef(){const box=$("#refs-preview");if(!ref){box.style.display="none";box.innerHTML="";return}box.style.display="block";box.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><img src="${ref.url}" style="width:48px;height:48px;border-radius:10px;object-fit:cover"><span style="font-size:12px;color:var(--muted)">Reference ready</span><button type="button" id="ref-x" style="margin-left:auto;padding:6px 10px;border-radius:8px;border:1px solid var(--line);font-size:12px">Remove</button></div>`;$("#ref-x").onclick=()=>{URL.revokeObjectURL(ref.url);ref=null;showRef()}}
+async function pickRef(file){if(!file||!/^image\//i.test(file.type))return;if(file.size>8e6){stat("Image max 8MB",true);return}if(ref)URL.revokeObjectURL(ref.url);const url=URL.createObjectURL(file);const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});ref={url,dataUrl,blob:file};showRef()}
+$("#btn-ref").onclick=()=>$("#ref-in").click();$("#btn-ref2").onclick=()=>$("#ref-in").click();$("#ref-in").onchange=e=>{const f=e.target.files?.[0];e.target.value="";pickRef(f)};
+const SURPRISES=["A neon jellyfish orchestra under the aurora","Tiny astronauts skateboarding Saturn's rings","A raccoon in a sharp suit conducting penguins","Cyberpunk rainy night market"];
+$("#btn-surprise").onclick=()=>{$("#prompt").value=SURPRISES[Math.floor(Math.random()*SURPRISES.length)];$("#prompt").focus()};
+$$(".qi").forEach(b=>b.onclick=()=>{if(b.dataset.needRef&&!ref){stat("Add a reference photo first.",true);$("#ref-in").click();return}$("#prompt").value=b.dataset.p;$("#prompt").focus()});
+$("#btn-style").onclick=()=>{const t=$("#prompt");t.value=(t.value+" cinematic style, photoreal").trim();t.focus()};
+$("#btn-mood").onclick=()=>{const t=$("#prompt");t.value=(t.value+" moody atmosphere").trim();t.focus()};
+let busy=false,lastBlob=null,abort=false;
+const stat=(t,err,ok)=>{const s=$("#stat");s.className="status on"+(err?" err":ok?" ok":"");s.textContent=t};
+async function generate(){if(busy)return;const raw=$("#prompt").value.trim();if(!raw&&!ref){stat("Add a prompt or photo first.",true);return}busy=true;abort=false;$("#go").disabled=true;$("#go").classList.add("busy");$("#result").classList.remove("on");$("#btn-cancel").style.display="inline-flex";try{const{blob,meta}=await frankgptGenerate({prompt:raw,ar:"9:16",seconds:10,refDataUrl:ref?ref.dataUrl:null,onStatus:msg=>stat(msg),onTick:s=>stat("FRANKGPT · 10s locked\nGenerating… "+s+"s")});if(abort)throw new Error("Cancelled");const id=Date.now()+"-"+Math.random().toString(36).slice(2,8);const buf=await blob.arrayBuffer();await idbPut("v",{id,prompt:meta.prompt,ts:meta.ts,totalSec:meta.seconds,model:meta.model,engine:meta.engine,user:getUser()?.email||"",mime:blob.type||"video/mp4",data:buf});lastBlob=blob;$("#vid").src=URL.createObjectURL(blob);$("#result").classList.add("on");stat("Saved · "+FRANKGPT.label+" · v"+VERSION,false,true);renderRecent()}catch(e){if(!abort)stat("Failed.\n"+friendlyError(e),true);else stat("Cancelled.",true)}finally{busy=false;abort=false;$("#go").disabled=false;$("#go").classList.remove("busy");$("#btn-cancel").style.display="none"}}
+$("#go").onclick=()=>generate();$("#btn-cancel").onclick=()=>{if(busy){abort=true;stat("Cancelling…",true)}};$("#btn-dl").onclick=()=>{if(!lastBlob)return;const a=document.createElement("a");a.href=URL.createObjectURL(lastBlob);a.download="frankgpt-"+Date.now()+".mp4";a.click()};
+function blobOf(rec){return rec?.data?new Blob([rec.data],{type:rec.mime||"video/mp4"}):null}
+async function renderRecent(){const box=$("#recent");let items=[];try{items=await idbAll("v")}catch(_){}if(!items.length){box.innerHTML=`<div class="empty"><strong>No videos yet</strong>Your next idea starts here.</div>`;return}const row=document.createElement("div");row.className="recent-row";for(const it of items.slice(0,10)){const b=blobOf(it);if(!b)continue;const c=document.createElement("div");c.className="rc";c.innerHTML=`<video src="${URL.createObjectURL(b)}" muted playsinline></video><div class="dur">${it.totalSec||"?"}s</div><div class="cap"></div>`;c.querySelector(".cap").textContent=it.prompt||"Untitled";c.onclick=()=>nav("lib");row.append(c)}box.replaceChildren(row)}
+async function renderLib(){const box=$("#library");let items=[];try{items=await idbAll("v")}catch(e){box.innerHTML=`<div class="empty"><strong>Error</strong>${e.message}</div>`;return}if(!items.length){box.innerHTML=`<div class="empty"><strong>Empty</strong></div>`;return}box.innerHTML="";for(const it of items){const b=blobOf(it);if(!b)continue;const d=document.createElement("div");d.style.cssText="border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel)";d.innerHTML=`<video src="${URL.createObjectURL(b)}" controls playsinline style="width:100%;aspect-ratio:16/10;object-fit:cover;background:#000"></video><div style="padding:10px;display:flex;gap:8px"><p style="margin:0;font-size:12px;color:var(--muted);flex:1"></p><button class="soft danger" type="button">Delete</button></div>`;d.querySelector("p").textContent=(it.prompt||"")+(it.totalSec?" · "+it.totalSec+"s":"");d.querySelector("button").onclick=async()=>{await idbDel("v",it.id);renderLib();renderRecent()};box.append(d)}}
+async function renderExplore(){const box=$("#explore");let items=[];try{items=await idbAll("explore")}catch(_){}if(!items.length){box.innerHTML=`<div class="ex-empty"><div style="font-size:40px;margin-bottom:8px">👑</div><h3>NO UPLOADS YET!</h3><p>Be the 1st to share a creation!</p></div>`;return}box.innerHTML="";for(const it of items){const b=blobOf(it);if(!b)continue;const d=document.createElement("div");d.className="post";d.innerHTML=`<div class="post-h"><div class="post-av">💀</div><div class="post-meta"><div class="who">@${(it.who||"creator").replace(/\s/g,".").toLowerCase()}</div><div class="when">just now</div></div></div><video src="${URL.createObjectURL(b)}" controls playsinline></video><div class="post-cap">${it.prompt||"Shared"} 👑</div><div class="post-acts"><span>💜 0</span><span>💬 0</span><span>↗</span></div>`;box.append(d)}}
+async function doShare(){if(!lastBlob){nav("home");stat("Generate a video first.",true);return}const u=getUser();const id=Date.now()+"-pub";const buf=await lastBlob.arrayBuffer();await idbPut("explore",{id,prompt:$("#prompt").value||"Shared",ts:Date.now(),who:u?.name||"Anon",mime:"video/mp4",data:buf});stat("Shared to Explore.",false,true);nav("explore")}
+$("#btn-share").onclick=doShare;$("#btn-share-ex").onclick=doShare;
+$("#btn-plan").onclick=()=>$("#plans-modal").classList.add("on");$("#btn-upgrade").onclick=()=>$("#plans-modal").classList.add("on");$("#plans-close").onclick=()=>$("#plans-modal").classList.remove("on");
+$$(".buy").forEach(b=>b.onclick=()=>{if(b.dataset.tier==="free"){$("#plans-modal").classList.remove("on");return}stat("Memberships coming soon.",false,true);$("#plans-modal").classList.remove("on")});
+$$(".filt").forEach(f=>f.onclick=()=>{$$(".filt").forEach(x=>x.classList.remove("on"));f.classList.add("on")});
+(function boot(){const u=getUser();if(u){enterApp();return}$("#gate").classList.remove("hidden")})();
+</script>
+</body>
+</html>
