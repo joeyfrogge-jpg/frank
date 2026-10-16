@@ -1,8 +1,10 @@
 from __future__ import annotations
 from pathlib import Path
 
+
 class BackendNotReady(RuntimeError):
     pass
+
 
 def generate(*, backend: str, mode: str, prompt: str, image_path: str | None,
              duration: int, fps: int, output: str, config: dict, seed: int | None = None):
@@ -28,5 +30,5 @@ def generate(*, backend: str, mode: str, prompt: str, image_path: str | None,
     raise BackendNotReady(
         f"The {backend} adapter has not been verified for this installed checkpoint/API. "
         "No video was generated. Place weights under models/wan2.2, implement the verified "
-        "adapter, then retry. See STANDALONE.md and docs/MODEL_CARD.md."
+        "adapter, then retry. See STANDALONE.md and configs/default.json."
     )

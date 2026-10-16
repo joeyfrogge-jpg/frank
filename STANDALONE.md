@@ -1,6 +1,6 @@
 # FRANK / FRANKGPT — Standalone (no Puter)
 
-**Guest create. Sign-in only to post on Explore. Shared feed for web + APK. Admin via master link.**
+**Guest create. Sign-in only to post on Explore. Shared feed for web + APK.**
 
 ## Product rules
 
@@ -13,34 +13,28 @@
 
 ## Pricing (UI)
 
-- **Free** $0 — 3–5 gens/day, watermark, basic models
-- **Plus** $9.99 — no watermark, longer clips, priority
+- **Free** $0 — 3 gens/day, watermark, basic models
+- **Plus** $9.99 — no watermark, longer clips (20s), priority
 - **Premium** $24.99 — image-to-video, style/mood, faster (MOST POPULAR)
-- **Platinum** $49.99 — unlimited, commercial, master-link benefits
+- **Platinum** $49.99 — highest daily cap, commercial license
 
-## Master admin (free unlimited + moderator)
-
-Open:
-
-```
-https://YOUR-SITE/?master=FRANK-MASTER-2026
-```
-
-Then sign in with Google or Email. That account becomes **admin / moderator / Platinum** (free).
-
-Change the token with env `FRANK_MASTER_TOKEN`.
+See `server/server.py`'s `PLANS` dict for the exact per-day limits enforced by the API.
 
 ## Model (FrankGpt-Model bundle)
 
 - Package under `frankgpt/` + `configs/default.json`
 - Backends: **Wan 2.2** and **CogVideoX**
-- Weights are **not** in git — download into `models/wan2.2` (see `docs/MODEL_CARD.md`)
-- Pipeline refuses fake videos until adapter is verified on your GPU
+- Weights are **not** in git — download into `models/wan2.2` / `models/cogvideox` per `configs/default.json`
+- Pipeline refuses fake videos until an adapter is verified on your GPU
+- Note: this package is a standalone model-dispatch layer. The live HTTP server (`server/server.py`)
+  currently talks to models through its own `server/adapter.py` (`FRANK_PROVIDER=local/replicate/selftest`,
+  see `docs/ENGINE.md`) rather than through `frankgpt/`. Wire `frankgpt/pipeline.py` in yourself if you want
+  the API to dispatch through this package instead.
 
 ## Run API (shared feed + jobs)
 
 ```bash
-python3 api/server.py
+python3 server/server.py
 ```
 
 Open http://127.0.0.1:8000
@@ -50,7 +44,7 @@ Static GitHub Pages hosts the UI; for a **synced public feed** and real jobs, ru
 ## iOS / Android
 
 - iOS: Safari → Add to Home Screen
-- Android: Chrome Install / Bubblewrap TWA from `web/manifest.json`
+- Android: Chrome Install / Bubblewrap TWA from `manifest.json`
 Same Explore feed when all clients use the same API origin.
 
-**Version:** 2.0.0-standalone
+**Version:** frankgpt-standalone-1.0
