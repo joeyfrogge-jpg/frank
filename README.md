@@ -1,49 +1,75 @@
 # FRANKGPT — AI Video Generator
 
-**Engine:** Alibaba **Wan 2.7** (text-to-video + image-to-video) via [Puter.js](https://docs.puter.com/AI/txt2vid/).
+**Product brand:** FRANKGPT  
+**Engine (live):** Alibaba **Wan 2.7** text-to-video + image-to-video via [Puter.js](https://docs.puter.com/AI/txt2vid/)  
+**No Supabase.** Library is on-device. Explore can be local or upgraded later.
 
 **Live:** https://joeyfrogge-jpg.github.io/frank/
 
-Also: https://joeyfrogge-jpg.github.io/frank/iphone.html (iPhone-optimized)
+---
 
-## What it does
+## Why not “exactly Sora”?
 
-FRANKGPT turns text prompts (and optional reference photos) into short AI videos.
+OpenAI shut down the **Sora API on September 24, 2026**. There is no official Sora endpoint left.
 
-- Prompt + optional photo → generate
-- 5s / 10s / 15s lengths
-- Vertical / wide / square
-- Library saved on-device (IndexedDB)
-- Works in Safari, Chrome, and as installable PWA
+Training a new foundation model from scratch at Sora quality is not something that can be done in a web app repo — it requires massive GPU clusters and datasets.
 
-## How to use
+**FRANKGPT** is the product name. Under the hood it uses the best *available* production models (currently Wan 2.7 on Puter). The engine is isolated in `frankgpt-engine.js` so we can swap or add providers (Seedance, MiniMax H3, Kling, Veo, etc.) when you have API keys.
 
-1. Open the site → sign in to Puter when prompted (you pay for your own generations — no API keys needed).
-2. Write a prompt. Optionally add a reference photo.
-3. Choose length and format.
-4. Tap **→**. Video is generated with Wan 2.7 and saved to your Library.
+---
+
+## What works today
+
+| Feature | Status |
+|--------|--------|
+| Text → video | ✅ FRANKGPT / Wan 2.7 |
+| Image → video | ✅ FRANKGPT / Wan 2.7 |
+| No API keys for you (user-pays Puter) | ✅ |
+| No Supabase | ✅ |
+| On-device Library | ✅ |
+| Explore (local share) | ✅ skeleton |
+| PWA installable | ✅ |
+| Google sign-in gate | ✅ structure (needs your Client ID) |
+| Memberships | Skeleton only |
+
+---
 
 ## Files
 
 | File | Purpose |
 |------|--------|
-| `iphone.html` | Main iPhone / mobile experience |
-| `index.html` | Desktop / general web version |
-| `standalone.html` | Hugging Face Gradio fallback (no Puter) |
-| `frank.js` | Shared engine logic |
-| `dual.html` | Experimental dual-model |
+| `index.html` | Main app (design aligned to your screenshots) |
+| `frankgpt-engine.js` | **FRANKGPT** generation engine |
+| `manifest.json` + `sw.js` | PWA |
+| `iphone.html` | Earlier mobile single-file |
+| `standalone.html` | HF Gradio fallback |
 
-## GitHub Pages
+---
 
-1. Repo **Settings → Pages**
-2. Source: **Deploy from a branch** → `main` / root → Save
+## How generation works
 
-## Version
+1. User opens site → Google gate (or Dev skip for testing).
+2. Prompt + optional reference photo.
+3. **FRANKGPT** calls Puter `txt2vid` with Wan 2.7 T2V or I2V.
+4. Video saved to IndexedDB Library.
+5. Optional “Share to Explore” (local for now).
 
-`frankgpt-1.0` (Wan 2.7)
+---
 
-## Notes
+## Master link
 
-- No Supabase required for core functionality.
-- Public feed / Explore is optional and can be added later without forced sign-in.
-- For a real Android APK: wrap this PWA with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) or Capacitor.
+`https://joeyfrogge-jpg.github.io/frank/?master=FRANK-MASTER-2026`  
+After sign-in, grants Platinum / unlimited flag (payments still skeleton).
+
+---
+
+## Next (when you’re ready)
+
+1. Paste your **Google OAuth Client ID** into `index.html`.
+2. Wire real **Stripe** for Plus / Premium / Platinum.
+3. Optional: add a second provider (e.g. Seedance / MiniMax) behind FRANKGPT when you have keys.
+4. APK via Bubblewrap from the PWA.
+
+---
+
+**Version:** `frankgpt-1.0`
