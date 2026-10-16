@@ -1,12 +1,25 @@
 name: Build FRANK APK
 on:
   workflow_dispatch:
+    inputs:
+      api_base:
+        description: "Your FRANKGPT server URL the APK should talk to (https://...)"
+        required: true
   push:
     paths:
       - 'index.html'
-      - 'iphone.html'
-      - 'android/**'
+      - 'frank-app.js'
+      - 'config.js'
+      - 'manifest.json'
+      - 'sw.js'
+      - 'terms.html'
+      - 'privacy.html'
+      - 'icons/**'
       - '.github/workflows/build-apk.yml'
+
+env:
+  # push-triggered builds use the repo variable FRANK_API_BASE (Settings -> Variables)
+  API_BASE: ${{ github.event.inputs.api_base || vars.FRANK_API_BASE }}
 
 jobs:
   apk:
@@ -22,12 +35,19 @@ jobs:
           java-version: '21'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-      - name: Prepare web
+      - name: Prepare web bundle
         run: |
-          mkdir -p www
-          cp index.html www/index.html || cp iphone.html www/index.html
-          cp manifest.json www/ 2>/dev/null || true
-          cp sw.js www/ 2>/dev/null || true
+          mkdir -p www/icons
+          cp index.html frank-app.js config.js manifest.json sw.js terms.html privacy.html www/
+          cp icons/*.png www/icons/
+          if [ -z "$API_BASE" ]; then
+            echo "::error::No API base. Run the workflow manually with api_base, or set repo variable FRANK_API_BASE."
+            exit 1
+          fi
+          # the APK has no server of its own: point it at yours
+          sed -i "s#API_BASE: \"\"#API_BASE: \"${API_BASE%/}\"#" www/config.js
+          grep -n API_BASE www/config.js
+          ! grep -ril puter www || { echo "::error::Puter reference found in bundle"; exit 1; }
       - name: Capacitor Android
         run: |
           npm init -y

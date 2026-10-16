@@ -9,10 +9,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<meta name="description" content="FRANK — make something real. AI video creation.">
 <title>FRANK</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://js.puter.com/v2/"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{--bg:#000;--panel:#0c0c0e;--elev:#151518;--line:rgba(255,255,255,.09);--text:#f5f5f7;--muted:#8e8e93;--dim:#5c5c62;--g1:#a78bfa;--g2:#60a5fa;--y:#fbbf24;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--nav:calc(58px + var(--safe-b));--font:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -121,57 +122,60 @@ button{cursor:pointer;border:0;background:none}
 </head>
 <body>
 <div id="gate">
-  <div class="gate-logo"><span class="crown">\ud83d\udc51</span><h1>FRANK</h1><span class="gate-cam">\ud83d\udcf7</span></div>
+  <div class="gate-logo"><span class="crown">👑</span><h1>FRANK</h1><span class="gate-cam">📷</span></div>
   <div class="gate-hero">
     <h2>MAKE SOMETHING<br><span class="u">REAL.</span></h2>
-    <p>Your ideas. Your videos. No boring stuff. \ud83d\ude0a</p>
+    <p>Your ideas. Your videos. No boring stuff. 😊</p>
   </div>
   <div class="gate-cards">
-    <div class="gate-card"><div class="th" style="background:linear-gradient(135deg,#1e1b4b,#4c1d95)">\ud83e\udd9d</div><div class="lb">RACCOONS IN SUITS \u2192</div></div>
-    <div class="gate-card"><div class="th" style="background:linear-gradient(135deg,#0c4a6e,#0369a1)">\ud83c\udf03</div><div class="lb">TURN A PHOTO INTO A VIDEO \u2192</div></div>
-    <div class="gate-card"><div class="th" style="background:linear-gradient(135deg,#713f12,#a16207)">\ud83d\udc15</div><div class="lb">ANIMALS DOING HUMAN THINGS \u2192</div></div>
+    <div class="gate-card"><div class="th" style="background:linear-gradient(135deg,#1e1b4b,#4c1d95)">🦝</div><div class="lb">RACCOONS IN SUITS →</div></div>
+    <div class="gate-card"><div class="th" style="background:linear-gradient(135deg,#0c4a6e,#0369a1)">🌃</div><div class="lb">TURN A PHOTO INTO A VIDEO →</div></div>
+    <div class="gate-card"><div class="th" style="background:linear-gradient(135deg,#713f12,#a16207)">🐕</div><div class="lb">ANIMALS DOING HUMAN THINGS →</div></div>
   </div>
   <div class="gate-btns" id="gate-btns">
     <button type="button" class="gate-btn google" id="btn-google">Continue with Google</button>
+    <div id="google-slot" style="display:none;justify-content:center"></div>
     <button type="button" class="gate-btn email" id="btn-email">Continue with email</button>
     <button type="button" class="gate-btn phone" id="btn-phone">Continue with phone</button>
   </div>
   <div class="auth-form" id="form-email">
     <input id="email-addr" type="email" placeholder="Email address" autocomplete="email">
-    <input id="email-pass" type="password" placeholder="Password (6+ characters)" autocomplete="new-password">
+    <input id="email-pass" type="password" placeholder="Password (8+ characters)" autocomplete="new-password">
     <input id="email-name" type="text" placeholder="Display name" value="Creator">
     <button type="button" class="bp" id="email-submit">Continue with email</button>
-    <button type="button" class="back" id="email-back">\u2190 Back</button>
+    <button type="button" class="back" id="email-back">← Back</button>
   </div>
   <div class="auth-form" id="form-phone">
-    <input id="phone-num" type="tel" placeholder="Phone number (+1\u2026)" autocomplete="tel">
+    <input id="phone-num" type="tel" placeholder="Phone number (+1…)" autocomplete="tel">
     <input id="phone-code" type="text" placeholder="Verification code" style="display:none">
     <input id="phone-name" type="text" placeholder="Display name" value="Creator">
     <button type="button" class="bp" id="phone-submit">Send code / Continue</button>
-    <button type="button" class="back" id="phone-back">\u2190 Back</button>
-    <p style="font-size:11px;color:var(--dim);text-align:center">Demo mode: enter any 6-digit code after sending.</p>
+    <button type="button" class="back" id="phone-back">← Back</button>
+    <p style="font-size:11px;color:var(--dim);text-align:center">We text you a one-time code. Use international format (+1…).</p>
   </div>
+  <p class="gate-legal" id="gate-offline" style="display:none"></p>
   <div class="gate-or" id="gate-or">OR</div>
-  <p class="gate-legal" id="gate-legal">By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</p>
-  <div class="gate-signin" id="gate-signin">Already have an account? <span>Sign in \u2192</span></div>
-  <div class="gate-signin" id="gate-skip" style="margin-top:8px;color:var(--dim)">Continue as guest \u2192</div>
+  <p class="gate-legal" id="gate-legal">By continuing, you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
+  <div class="gate-signin" id="gate-signin">Already have an account? <span>Sign in →</span></div>
+  <div class="gate-signin" id="gate-skip" style="margin-top:8px;color:var(--dim)">Continue as guest →</div>
 </div>
 <div class="app" id="app" style="display:none">
   <div class="scroll">
     <section class="page on" id="p-home">
       <header class="top">
-        <div class="brand"><div class="mark">\u2726</div> FRANK</div>
+        <div class="brand"><div class="mark">✦</div> FRANK</div>
         <div class="user-pill" id="user-pill">Guest</div>
       </header>
       <div class="hero">
         <h1>WHAT DO YOU<br><span>WANT TO CREATE?</span></h1>
-        <p>Type it. Drop it. Make it real. \ud83d\ude0a</p>
-        <div class="badge">FRANK \u00b7 Wan 2.7 \u00b7 10 / 20 / 30s</div>
+        <p>Type it. Drop it. Make it real. 😊</p>
+        <div class="badge">FRANKGPT · 10 / 20 / 30s</div>
+        <div class="badge" id="engine-badge" style="display:none;margin-left:6px"></div>
       </div>
       <div class="box">
         <div class="row-between">
-          <div class="label">\u2726 Your prompt</div>
-          <button class="btn-ref" type="button" id="btn-ref">\ud83d\udcf7 Photo</button>
+          <div class="label">✦ Your prompt</div>
+          <button class="btn-ref" type="button" id="btn-ref">📷 Photo</button>
           <input type="file" id="ref-in" accept="image/*" capture="environment" hidden>
         </div>
         <textarea id="prompt" placeholder='e.g. "a raccoon in a suit on neon Tokyo streets"' rows="3"></textarea>
@@ -184,14 +188,14 @@ button{cursor:pointer;border:0;background:none}
         <p class="lock" id="lock">Length locked while generating</p>
         <div class="chips">
           <button type="button" class="chip" data-p="a raccoon in a tailored black suit walking through neon Tokyo at night, cinematic lighting">Raccoons</button>
-          <button type="button" class="chip" data-p="cinematic camera move turning a still photo into living video with natural motion">Photo\u2192Video</button>
+          <button type="button" class="chip" data-p="cinematic camera move turning a still photo into living video with natural motion">Photo→Video</button>
           <button type="button" class="chip" data-p="a golden retriever wearing sunglasses surfing at golden hour">Animals</button>
           <button type="button" class="chip" data-p="moody bedroom at golden hour, soft light, slow camera push in">Mood</button>
           <button type="button" class="chip" id="chip-surprise">Surprise me</button>
         </div>
         <div class="bot">
-          <div class="hint">Vertical \u00b7 web & APK share one Explore</div>
-          <button class="go" type="button" id="go"><span class="spin"></span><span class="arr">\u2192</span></button>
+          <div class="hint">Web & APK share one Explore</div>
+          <button class="go" type="button" id="go"><span class="spin"></span><span class="arr">→</span></button>
         </div>
       </div>
       <div class="status" id="stat"></div>
@@ -215,22 +219,23 @@ button{cursor:pointer;border:0;background:none}
         <label>Format<select id="set-ar"><option value="9:16" selected>Vertical</option><option value="16:9">Wide</option><option value="1:1">Square</option></select></label>
       </div>
       <div class="card">
-        <label>Shared Explore feed URL<input id="set-feed" placeholder="https://api.jsonbin.io/v3/b/\u2026"></label>
-        <label>Feed access key<input id="set-feed-key" type="password" placeholder="JSONBin Master Key" autocomplete="off"></label>
-        <p class="h">Optional: create free bin at jsonbin.io with {"posts":[]} so web + APK share one feed.</p>
+        <label>FRANKGPT server<input id="set-api" placeholder="https://your-server.example (blank = this site)" autocomplete="off" inputmode="url"></label>
+        <div id="api-status" style="font-size:13px;color:var(--muted);white-space:pre-wrap">Checking…</div>
+        <p class="h">Your own FRANKGPT backend (see docs/BACKEND.md). Blank uses the site you opened.</p>
       </div>
       <div class="card">
         <p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Account</p>
         <div id="set-acct" style="font-size:14px">Guest</div>
         <button class="soft" type="button" id="btn-signout" style="width:100%;margin-top:10px;display:none">Sign out</button>
+        <button class="soft" type="button" id="btn-portal" style="width:100%;margin-top:8px;display:none">Manage billing</button>
+        <button class="soft danger" type="button" id="btn-delacct" style="width:100%;margin-top:8px;display:none">Delete account</button>
       </div>
       <h3 style="margin:18px 0 10px;font-size:14px">Pick your power</h3>
-      <div class="plan"><h3>Free</h3><div class="pr">$0<span>/mo</span></div><ul><li>Basic models</li><li>Watermark</li><li>Limited gens/day</li></ul></div>
-      <div class="plan"><h3>Plus</h3><div class="pr">$9.99<span>/mo</span></div><ul><li>No watermark</li><li>Longer clips</li><li>Priority queue</li></ul></div>
-      <div class="plan pop"><h3>Premium \u00b7 MOST POPULAR</h3><div class="pr">$24.99<span>/mo</span></div><ul><li>Image-to-video</li><li>Style/Mood</li><li>Faster models</li></ul></div>
-      <div class="plan"><h3>Platinum</h3><div class="pr">$49.99<span>/mo</span></div><ul><li>Highest quality</li><li>Commercial license</li><li>Unlimited</li></ul></div>
+      <div class="plan" data-plan="free"><h3>Free</h3><div class="pr">$0<span>/mo</span></div><ul><li>10s clips</li><li>Watermark</li><li>3 videos/day</li></ul></div>
+      <div class="plan" data-plan="plus"><h3>Plus</h3><div class="pr">$9.99<span>/mo</span></div><ul><li>No watermark</li><li>Up to 20s clips</li><li>20 videos/day</li></ul><button class="soft primary plan-btn" type="button" data-up="plus" style="width:100%;margin-top:10px">Choose plus</button></div>
+      <div class="plan pop" data-plan="premium"><h3>Premium · MOST POPULAR</h3><div class="pr">$24.99<span>/mo</span></div><ul><li>Up to 30s clips</li><li>Image-to-video</li><li>50 videos/day</li></ul><button class="soft primary plan-btn" type="button" data-up="premium" style="width:100%;margin-top:10px">Choose premium</button></div>
+      <div class="plan" data-plan="platinum"><h3>Platinum</h3><div class="pr">$49.99<span>/mo</span></div><ul><li>Up to 30s clips</li><li>Image-to-video</li><li>500 videos/day</li></ul><button class="soft primary plan-btn" type="button" data-up="platinum" style="width:100%;margin-top:10px">Choose platinum</button></div>
       <button class="soft" type="button" id="btn-save" style="width:100%;margin-bottom:8px">Save settings</button>
-      <button class="soft" type="button" id="btn-signin-puter" style="width:100%;margin-bottom:8px">Sign in to Puter (generation)</button>
       <button class="soft danger" type="button" id="btn-wipe" style="width:100%">Erase library</button>
       <div class="status" id="set-msg" style="margin-top:12px"></div>
     </div></section>
@@ -244,11 +249,12 @@ button{cursor:pointer;border:0;background:none}
 </div>
 <div class="modal-bg" id="pub-modal"><div class="modal">
   <h3>Share to Explore</h3>
-  <p>Visible on web and app.</p>
+  <p>Visible to everyone on web and app. Sign-in required.</p>
   <input id="pub-name" placeholder="Your name" maxlength="40">
   <textarea id="pub-cap" placeholder="Caption"></textarea>
   <div class="row"><button class="no" type="button" id="pub-cancel">Cancel</button><button class="ok" type="button" id="pub-ok">Publish</button></div>
 </div></div>
+<script src="./config.js"></script>
 <script type="module" src="./frank-app.js"></script>
 </body>
 </html>

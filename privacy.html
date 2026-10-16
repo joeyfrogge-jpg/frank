@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Privacy Policy — FRANK</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<style>
+:root{color-scheme:dark}
+body{margin:0;background:#000;color:#f5f5f7;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif;padding:max(20px,env(safe-area-inset-top)) 20px 60px}
+main{max-width:720px;margin:0 auto}
+h1{font-size:28px;margin:12px 0 4px}h2{font-size:18px;margin:28px 0 6px;color:#e9e0ff}
+p,li{color:#c7c7cc}a{color:#a78bfa}.m{color:#8e8e93;font-size:13px}
+ul{padding-left:20px}.back{display:inline-block;margin-bottom:8px;text-decoration:none}
+</style></head><body><main>
+<a class="back" href="./index.html">&larr; Back to FRANK</a>
+<h1>Privacy Policy</h1><p class="m">Last updated: October 16, 2026</p>
+
+<h2>What we collect</h2>
+<ul>
+<li><strong>Account details</strong> — email and display name (email sign-in), your Google account ID, name and email (Google sign-in), or your phone number (phone sign-in). Passwords are stored only as salted scrypt hashes; we cannot read them.</li>
+<li><strong>Your creations</strong> — prompts, optional reference photos, and the videos generated for you.</li>
+<li><strong>Usage and security data</strong> — how many videos you generated today (to apply plan limits), your IP address (for rate limiting and guest limits), and your plan.</li>
+<li><strong>Payments</strong> — handled by Stripe. We store your plan and Stripe customer/subscription IDs; we never see or store your card number.</li>
+</ul>
+
+<h2>What stays on your device</h2>
+<p>Your Library (videos you generated) is stored in your browser&rsquo;s IndexedDB on your device. Settings and your sign-in token are stored in your browser&rsquo;s local storage. Erase them any time with <em>More &rarr; Erase library</em> or by clearing site data.</p>
+
+<h2>How we use it</h2>
+<p>To run the app: sign you in, generate and show your videos, enforce plan limits, take payment, prevent abuse, and keep Explore working. We do not sell your data and we do not show ads.</p>
+
+<h2>Who else touches it (only if the operator turns it on)</h2>
+<ul>
+<li><strong>Google</strong> — to verify Google sign-in.</li>
+<li><strong>Twilio</strong> — to text your verification code (phone sign-in).</li>
+<li><strong>Stripe</strong> — to process subscriptions.</li>
+<li><strong>An inference provider</strong> (for example Replicate) — only if the operator runs generation through one; your prompt and photo are sent to it to make the video. If the operator runs the model on their own GPU, prompts and photos never leave their server.</li>
+</ul>
+<p>FRANK does not ask you to sign in to any separate third-party AI service.</p>
+
+<h2>Explore is public</h2>
+<p>Videos you share to Explore, with your chosen display name and caption, can be seen by anyone who opens the app until you remove them.</p>
+
+<h2>How long we keep things</h2>
+<p>Generated videos and reference photos are deleted automatically after a retention period (14 days by default) unless the video is shared to Explore. Sessions expire after 30 days. Deleting your account removes your profile, sessions, videos, reference photos and Explore posts right away; payment records may be kept by Stripe as the law requires.</p>
+
+<h2>Your choices</h2>
+<ul>
+<li>Delete your account and server-side videos in <em>More &rarr; Delete account</em>.</li>
+<li>Remove an Explore post with <em>Remove</em> on the post, or delete the video from your Library.</li>
+<li>Use FRANK as a guest to avoid giving an email or phone number (guests cannot share to Explore or buy a plan).</li>
+</ul>
+
+<h2>Children</h2>
+<p>FRANK is not for children under 13 (or the minimum age in your country). If you believe a child has an account, tell us and we will remove it.</p>
+
+<h2>Security</h2>
+<p>Connections should be served over HTTPS; passwords are hashed; session tokens are stored hashed on the server. No system is perfectly secure.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes, the date above changes. Material changes will be announced in the app.</p>
+<p class="m" style="margin-top:36px">Questions or requests: open an issue at
+<a href="https://github.com/joeyfrogge-jpg/frank/issues">github.com/joeyfrogge-jpg/frank/issues</a>.
+This page is provided with the FRANK project; the operator of the server you are connected to is
+responsible for its accuracy and should have it reviewed for their jurisdiction.</p>
+</main></body></html>
