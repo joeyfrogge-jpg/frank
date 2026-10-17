@@ -1,0 +1,27 @@
+models:
+  - id: free-browser
+    display_name: FrankGPT Free (Browser)
+    provider: free
+    task_support:
+      - text-to-video
+    weights_location: none
+    download_instructions: []
+    enabled: true
+    requires_gpu: false
+    durations_seconds: [10, 20, 30]
+    notes: >
+      Runs in the browser. No server GPU required.
+      Creates 10s, 20s, or 30s motion clips.
+
+  - id: wan-local
+    display_name: Wan Video Model (optional)
+    provider: local
+    task_support:
+      - text-to-video
+      - image-to-video
+    weights_location: external
+    download_instructions:
+      - docs/MODEL_SETUP.md
+    enabled: false
+    requires_gpu: true
+    durations_seconds: [10, 20, 30]
