@@ -1,4 +1,4 @@
-/* frankgpt — full standalone app */
+/* frankgpt — full standalone app — no GPU required */
 (function () {
   "use strict";
 
@@ -183,7 +183,7 @@
         reader.readAsDataURL(blob);
       };
       var t0 = performance.now();
-      var dur = Math.max(4, Math.min(seconds || 10, 12)) * 1000;
+      var dur = Math.max(4, Math.min(seconds || 10, 30)) * 1000;
       var scale0 = 1.0, scale1 = 1.16;
       var panX = (Math.random() - 0.5) * 0.1;
       var panY = (Math.random() - 0.5) * 0.1;
@@ -219,8 +219,9 @@
     var ih = 1024;
     var iw = Math.round(ih * arW / arH);
     var img = await loadImage(pollinationsUrl(prompt, iw, ih));
-    onStatus("FrankGPT · rendering clip…");
-    return kenBurnsVideo(img, Math.min(seconds || 10, 12), aspect);
+    var secs = Math.min(seconds || 10, 30);
+    onStatus("FrankGPT · rendering " + secs + "s clip…");
+    return kenBurnsVideo(img, secs, aspect);
   }
 
   function googleClientId() {
@@ -392,7 +393,7 @@
         };
         items.unshift(entry);
         saveLib(items);
-        showStat("FrankGPT clip ready.", false, true);
+        showStat("FrankGPT " + state.duration + "s clip ready.", false, true);
         toast("Video ready");
         if (state.token && state.token.indexOf("google_") === 0) {
           var feed = loadFeedStore();
@@ -544,7 +545,7 @@
     var urlEl = $("#set-server-url");
     if (urlEl) {
       var base = apiBase();
-      urlEl.textContent = base || "Standalone (free FrankGPT path)";
+      urlEl.textContent = base || "Standalone free (no GPU)";
     }
   }
 
@@ -555,7 +556,7 @@
       var cid = googleClientId();
       openModal(
         "FrankGPT Settings",
-        '<p style="color:var(--muted);font-size:13px;margin:0 0 12px">Optional server URL. Leave blank for free standalone.</p>' +
+        '<p style="color:var(--muted);font-size:13px;margin:0 0 12px">Optional server URL. Leave blank for free standalone (no GPU).</p>' +
         '<input class="field" id="m-server" value="' + esc(cur) + '" placeholder="https://your-server.example.com">' +
         '<p style="color:var(--muted);font-size:13px;margin:16px 0 8px">Google OAuth Client ID (Web)</p>' +
         '<input class="field" id="m-google" value="' + esc(cid) + '" placeholder="xxx.apps.googleusercontent.com">' +
@@ -586,7 +587,7 @@
     setAbout.addEventListener("click", function () {
       openModal(
         "About frankgpt",
-        "<p>Version " + esc(CFG.VERSION || "2.0") + "<br>FrankGPT free path works on this site with no server.</p>" +
+        "<p>Version " + esc(CFG.VERSION || "2.0") + "<br>Free path: 10s / 20s / 30s clips in the browser. No GPU required.</p>" +
         '<div class="row"><button type="button" class="btn btn-primary" id="m-ok">OK</button></div>',
         function () {
           var ok = $("#m-ok");
