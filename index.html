@@ -1,1 +1,260 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>frankgpt</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070b;--panel:#0f0f16;--elev:#16161f;--card:#12121a;
+  --line:rgba(255,255,255,.08);--text:#f4f4f8;--muted:#9a9aa8;--dim:#5c5c6e;
+  --p1:#8b5cf6;--p2:#6366f1;--p3:#a78bfa;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+  --nav:calc(64px + var(--safe-b));
+  --font:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font:15px/1.45 var(--font);overflow:hidden}
+button,input,textarea{font:inherit;color:inherit;border:0;background:none}
+button{cursor:pointer}
+a{color:var(--p3)}
+.app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:var(--safe-t)}
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
+.screen.on{display:flex}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav)+20px)}
+#gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;
+  padding:max(20px,var(--safe-t)) 24px max(28px,var(--safe-b));overflow-y:auto}
+#gate.off{display:none}
+.gate-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 20%,rgba(99,102,241,.25),transparent 70%),
+  radial-gradient(ellipse 60% 40% at 80% 10%,rgba(139,92,246,.15),transparent);pointer-events:none}
+.gate-logo{display:flex;align-items:center;gap:10px;margin-top:28px;z-index:1}
+.logo-mark{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);
+  display:grid;place-content:center;box-shadow:0 4px 20px rgba(139,92,246,.4)}
+.logo-mark svg{width:20px;height:20px}
+.logo-text{font-size:22px;font-weight:800;letter-spacing:-.03em;background:linear-gradient(90deg,#c4b5fd,#818cf8);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.gate-tag{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--dim);margin-top:8px;z-index:1}
+.gate-hero{text-align:center;margin:36px 0 8px;z-index:1;max-width:340px}
+.gate-hero h1{font-size:clamp(30px,8.5vw,38px);font-weight:800;letter-spacing:-.04em;line-height:1.12}
+.gate-hero h1 span{background:linear-gradient(90deg,#a78bfa,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gate-hero p{color:var(--muted);font-size:15px;margin-top:12px}
+.gate-btns{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;margin-top:32px;z-index:1}
+.btn{width:100%;padding:15px 18px;border-radius:999px;font-weight:600;font-size:15px;
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.btn:active{transform:scale(.98)}
+.btn-google{background:#fff;color:#111}
+.btn-outline{background:transparent;border:1.5px solid rgba(255,255,255,.18);color:var(--text)}
+.btn-primary{background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;box-shadow:0 4px 24px rgba(99,102,241,.35)}
+.btn-primary:disabled{opacity:.55}
+.gate-legal{color:var(--dim);font-size:12px;text-align:center;margin-top:24px;z-index:1}
+.gate-legal a{color:var(--muted)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 8px}
+.topbar .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:18px}
+.topbar .brand .logo-mark{width:28px;height:28px;border-radius:9px}
+.topbar .brand span{background:linear-gradient(90deg,#c4b5fd,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-content:center;color:var(--muted);background:var(--elev);border:1px solid var(--line)}
+.back-row{display:flex;align-items:center;gap:10px;padding:12px 18px 4px}
+.back-row h2{font-size:17px;font-weight:600}
+.explore-hero,.create-hero{padding:8px 20px 12px}
+.explore-hero h1,.create-hero h1{font-size:clamp(24px,6.5vw,32px);font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.explore-hero h1 span,.create-hero h1 span{background:linear-gradient(90deg,#a78bfa,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent}
+.explore-hero p,.create-hero p{color:var(--muted);font-size:14px;margin-top:6px}
+.search-wrap{padding:0 18px 16px}
+.search{display:flex;align-items:center;gap:10px;background:var(--elev);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.search input{flex:1;outline:none;font-size:14px}
+.section{padding:0 18px 8px}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-head h3{font-size:16px;font-weight:700}
+.trending,#feed-grid,.lib-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.t-card{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
+.t-card .thumb{aspect-ratio:16/11;background:linear-gradient(135deg,#1e1b4b,#312e81);position:relative}
+.t-card .thumb img,.t-card .thumb video{width:100%;height:100%;object-fit:cover}
+.t-card .play{position:absolute;left:10px;bottom:10px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-content:center}
+.t-card .meta{padding:10px 12px}
+.t-card .meta .title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-card .meta .views{font-size:11px;color:var(--dim);margin-top:2px}
+.cats{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.cat{flex:0 0 auto;padding:10px 16px;border-radius:14px;background:var(--elev);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted)}
+.cat.on{background:linear-gradient(135deg,rgba(139,92,246,.25),rgba(99,102,241,.2));border-color:rgba(139,92,246,.4);color:var(--text)}
+.prompt-box{margin:0 18px 16px;background:var(--elev);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.prompt-box textarea{width:100%;min-height:90px;resize:none;outline:none;font-size:15px;line-height:1.5}
+.prompt-tools{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.btn-icon-text{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px}
+.count{font-size:12px;color:var(--dim)}
+.opts{padding:0 18px 12px}
+.opts label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 16px;border-radius:999px;background:var(--elev);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
+.chip.on{background:linear-gradient(135deg,rgba(139,92,246,.3),rgba(99,102,241,.25));border-color:rgba(139,92,246,.5);color:#fff}
+.gen-wrap{padding:8px 18px 20px}
+.status{display:none;margin:0 18px 12px;padding:12px 14px;border-radius:12px;background:var(--elev);border:1px solid var(--line);font-size:13px;color:var(--muted)}
+.status.on{display:block}.status.err{border-color:rgba(239,68,68,.4);color:#fca5a5}.status.ok{border-color:rgba(34,197,94,.35);color:#86efac}
+.result{display:none;margin:0 18px 16px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#000}
+.result.on{display:block}
+.result video{width:100%;display:block;max-height:50vh;background:#000}
+.lib-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+.lib-empty .icon{width:72px;height:72px;border-radius:22px;background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(99,102,241,.15));display:grid;place-content:center;margin-bottom:20px;border:1px solid rgba(139,92,246,.25)}
+.lib-empty h2{font-size:20px;font-weight:700;margin-bottom:6px}
+.lib-empty p{color:var(--muted);font-size:14px;margin-bottom:24px}
+.set-group{margin:0 16px 16px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.set-group .head{padding:14px 16px 6px;font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+.set-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--line);cursor:pointer}
+.set-row:first-of-type{border-top:0}
+.set-row .ico{width:36px;height:36px;border-radius:10px;background:var(--elev);display:grid;place-content:center;color:var(--p3)}
+.set-row .txt{flex:1}.set-row .txt b{display:block;font-size:14px}.set-row .txt span{font-size:12px;color:var(--dim)}
+.set-row .chev{color:var(--dim);font-size:18px}
+.signout{margin:8px 16px 24px}
+.signout .btn{background:var(--elev);border:1px solid var(--line);color:var(--muted)}
+.nav{position:fixed;left:0;right:0;bottom:0;height:var(--nav);padding:0 8px var(--safe-b);background:rgba(10,10,15,.92);
+  backdrop-filter:blur(24px);border-top:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-around;z-index:40;padding-top:6px}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;color:var(--dim);font-size:10px;font-weight:600;max-width:80px}
+.nav button.on{color:var(--text)}
+.nav button svg{width:22px;height:22px}
+.nav .fab{position:relative;top:-18px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#6366f1);
+  display:grid;place-content:center;box-shadow:0 6px 24px rgba(99,102,241,.45);flex:0 0 56px;max-width:56px;color:#fff}
+.nav .fab svg{width:26px;height:26px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:60;display:none;align-items:flex-end;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{width:100%;max-width:420px;background:#12121a;border-radius:20px 20px 0 0;padding:20px 18px calc(20px + var(--safe-b));border:1px solid var(--line)}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.modal p{color:var(--muted);font-size:13px;margin-bottom:14px}
+.modal .row{display:flex;gap:10px;margin-top:8px}
+.modal .row .btn{flex:1}
+.field{width:100%;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--elev);font-size:15px;margin-bottom:10px}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav)+16px);transform:translateX(-50%) translateY(20px);opacity:0;
+  background:#1e1e2a;border:1px solid var(--line);padding:12px 18px;border-radius:12px;font-size:13px;z-index:80;transition:all .25s;max-width:90%}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div id="gate">
+    <div class="gate-bg"></div>
+    <div class="gate-logo">
+      <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M8 5.14v14l11-7-11-7z" fill="#fff"/></svg></div>
+      <div class="logo-text">frankgpt</div>
+    </div>
+    <div class="gate-tag">IDEAS TO VIDEOS</div>
+    <div class="gate-hero">
+      <h1>Turn your ideas<br>into stunning<br><span>videos.</span></h1>
+      <p>Create, imagine, bring it to life.</p>
+    </div>
+    <div class="gate-btns">
+      <button type="button" class="btn btn-google" id="btn-google">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Login with Google
+      </button>
+      <button type="button" class="btn btn-outline" id="btn-email">Login with Email</button>
+      <button type="button" class="btn btn-outline" id="btn-phone">Login with Phone</button>
+      <button type="button" class="btn btn-outline" id="btn-guest" style="margin-top:4px;opacity:.85">Continue as Guest</button>
+    </div>
+    <div class="gate-legal">By continuing, you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</div>
+  </div>
+
+  <div class="screen" id="screen-explore">
+    <div class="topbar">
+      <div class="brand"><div class="logo-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M8 5.14v14l11-7-11-7z" fill="#fff"/></svg></div><span>frankgpt</span></div>
+      <button type="button" class="icon-btn" id="btn-profile" title="Account"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg></button>
+    </div>
+    <div class="scroll">
+      <div class="explore-hero"><h1>Explore<br>whats <span>possible.</span></h1><p>Discover ideas and community creations.</p></div>
+      <div class="search-wrap"><div class="search"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M13 13l4 4"/></svg><input id="search-q" type="search" placeholder="Search ideas..." autocomplete="off"></div></div>
+      <div class="section"><div class="section-head"><h3>Trending</h3></div><div class="trending" id="trending-grid"></div></div>
+      <div class="section" style="margin-top:16px"><div class="cats" id="cats">
+        <button type="button" class="cat on" data-cat="all">All</button>
+        <button type="button" class="cat" data-cat="nature">Nature</button>
+        <button type="button" class="cat" data-cat="urban">Urban</button>
+        <button type="button" class="cat" data-cat="abstract">Abstract</button>
+      </div></div>
+      <div class="section" style="margin-top:16px"><div class="section-head"><h3>Community</h3></div><div id="feed-grid"></div></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-create">
+    <div class="back-row"><button type="button" class="icon-btn" id="create-back"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Create</h2></div>
+    <div class="scroll">
+      <div class="create-hero"><h1>Make a <span>video</span></h1><p>Describe what you want to see.</p></div>
+      <div class="prompt-box">
+        <textarea id="prompt" placeholder="Describe your idea..." maxlength="500"></textarea>
+        <div class="prompt-tools">
+          <button type="button" class="btn-icon-text" id="btn-random-prompt" title="Random prompt">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M20 9A8 8 0 0 0 6.5 6.5L4 4M4 15a8 8 0 0 0 13.5 2.5L20 20"/></svg>
+            Surprise me
+          </button>
+          <div class="count"><span id="prompt-count">0</span>/500</div>
+        </div>
+      </div>
+      <div class="opts"><label>Style</label><div class="chips" id="styles">
+        <button type="button" class="chip on" data-style="realistic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>Realistic</button>
+        <button type="button" class="chip" data-style="cinematic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 6V4M17 6V4M2 10h20"/></svg>Cinematic</button>
+        <button type="button" class="chip" data-style="animated"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z"/></svg>Animated</button>
+        <button type="button" class="chip" data-style="abstract"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18L12 4l8 14H4z"/></svg>Abstract</button>
+      </div></div>
+      <div class="opts"><label>Duration</label><div class="chips" id="durs">
+        <button type="button" class="chip on" data-dur="10">Short (10s)</button>
+        <button type="button" class="chip" data-dur="20">Medium (20s)</button>
+        <button type="button" class="chip" data-dur="30">Long (30s)</button>
+      </div></div>
+      <div class="opts"><label>Aspect</label><div class="chips" id="aspects">
+        <button type="button" class="chip on" data-aspect="9:16">9:16</button>
+        <button type="button" class="chip" data-aspect="16:9">16:9</button>
+        <button type="button" class="chip" data-aspect="1:1">1:1</button>
+      </div></div>
+      <div class="status" id="stat"></div>
+      <div class="result" id="result"><video id="result-vid" controls playsinline></video></div>
+      <div class="gen-wrap"><button type="button" class="btn btn-primary" id="go">Generate video</button></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-library">
+    <div class="topbar">
+      <div class="brand"><div class="logo-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M8 5.14v14l11-7-11-7z" fill="#fff"/></svg></div><span>Library</span></div>
+      <button type="button" class="icon-btn" id="lib-profile"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg></button>
+    </div>
+    <div class="scroll">
+      <div class="lib-empty" id="lib-empty">
+        <div class="icon"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="26" height="20" rx="3"/><path d="M10 12l5 3-5 3v-6z"/></svg></div>
+        <h2>No clips yet</h2>
+        <p>Generate a video and it will show up here.</p>
+        <button type="button" class="btn btn-primary" id="lib-create" style="max-width:220px">Create a video</button>
+      </div>
+      <div class="lib-grid" id="lib-grid" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-settings">
+    <div class="back-row"><button type="button" class="icon-btn" id="set-back"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><h2>Settings</h2></div>
+    <div class="scroll">
+      <div class="set-group">
+        <div class="head">Account</div>
+        <div class="set-row"><div class="ico"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="6" r="3"/><path d="M2 16c0-3 3-5 7-5s7 2 7 5"/></svg></div><div class="txt"><b id="set-name">Guest</b><span>Signed in status</span></div></div>
+      </div>
+      <div class="set-group">
+        <div class="head">App</div>
+        <div class="set-row" id="set-server"><div class="ico"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="7"/><path d="M2 9h14M9 2a11 11 0 0 1 0 14M9 2a11 11 0 0 0 0 14"/></svg></div><div class="txt"><b>Server and Google</b><span id="set-server-url">Standalone free (no GPU)</span></div><span class="chev">></span></div>
+        <div class="set-row" id="set-about"><div class="ico"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="7"/><path d="M9 8v5M9 6h.01"/></svg></div><div class="txt"><b>About frankgpt</b><span>Version and info</span></div><span class="chev">></span></div>
+      </div>
+      <div class="signout"><button type="button" class="btn" id="btn-signout">Sign out</button></div>
+    </div>
+  </div>
+
+  <nav class="nav" id="nav" style="display:none">
+    <button type="button" data-screen="explore"><svg fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Explore</button>
+    <button type="button" class="fab" data-screen="create"><svg fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button type="button" data-screen="library"><svg fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 12l4 2.5L8 17v-5z"/></svg>Library</button>
+    <button type="button" data-screen="settings"><svg fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Settings</button>
+  </nav>
+</div>
+<div class="modal-bg" id="modal-bg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+<script src="config.js"></script>
+<script src="frank-app.js"></script>
+</body>
+</html>
