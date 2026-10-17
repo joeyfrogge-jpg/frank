@@ -1,7 +1,0 @@
-.git
-server/data
-android
-www
-node_modules
-__pycache__
-.env
