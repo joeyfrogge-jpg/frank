@@ -1,25 +1,20 @@
 name: Build FRANK APK
+
 on:
   workflow_dispatch:
-    inputs:
-      api_base:
-        description: "Optional server URL for the APK (blank = free standalone)"
-        required: false
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - 'index.html'
-      - 'frank-app.js'
-      - 'config.js'
-      - 'manifest.json'
-      - 'sw.js'
-      - 'terms.html'
-      - 'privacy.html'
-      - 'icons/**'
-      - '.github/workflows/build-apk.yml'
-
-env:
-  API_BASE: ${{ github.event.inputs.api_base || vars.FRANK_API_BASE }}
+      - index.html
+      - frank-app.js
+      - config.js
+      - manifest.json
+      - sw.js
+      - terms.html
+      - privacy.html
+      - icons/**
+      - .github/workflows/build-apk.yml
 
 permissions:
   contents: write
@@ -28,57 +23,36 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
-      # Java 17 is more reliable with Capacitor 6 / Android Gradle Plugin
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: "17"
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Accept Android licenses
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
-
       - name: Prepare web bundle
         run: |
-          set -e
           mkdir -p www/icons
-          for f in index.html frank-app.js config.js manifest.json sw.js terms.html privacy.html; do
-            if [ -f "$f" ]; then cp "$f" www/; else echo "warn: missing $f"; fi
-          done
-          if [ -d icons ]; then cp icons/*.png www/icons/ 2>/dev/null || true; fi
-          # Point APK at optional server URL when provided
-          if [ -n "$API_BASE" ] && [ -f www/config.js ]; then
-            python3 - <<'PY'
-import os, pathlib, re
-p = pathlib.Path('www/config.js')
-t = p.read_text()
-base = os.environ.get('API_BASE', '').rstrip('/')
-t2 = re.sub(r'API_BASE:\s*"[^"]*"', f'API_BASE: "{base}"', t, count=1)
-p.write_text(t2)
-print('API_BASE set to', base)
-PY
-          fi
-          test -f www/index.html
-          test -f www/frank-app.js
-          test -f www/config.js
-          echo "www contents:" && ls -la www/
+          cp index.html frank-app.js config.js manifest.json www/
+          [ -f sw.js ] && cp sw.js www/ || true
+          [ -f terms.html ] && cp terms.html www/ || true
+          [ -f privacy.html ] && cp privacy.html www/ || true
+          [ -d icons ] && cp icons/*.png www/icons/ || true
+          ls -la www/
 
-      - name: Capacitor Android project
+      - name: Create Capacitor project files
         run: |
-          set -e
-          # Clean package.json for a dedicated Capacitor project root
-          cat > package.json <<'EOF'
-          {
+          printf '%s\n' '{
             "name": "frankgpt",
             "version": "2.0.0",
             "private": true,
@@ -87,17 +61,19 @@ PY
               "@capacitor/cli": "6.1.2",
               "@capacitor/core": "6.1.2"
             }
-          }
-          EOF
-          cat > capacitor.config.json <<'EOF'
-          {
+          }' > package.json
+          printf '%s\n' '{
             "appId": "com.frankgpt.app",
             "appName": "FrankGPT",
             "webDir": "www",
             "android": { "allowMixedContent": true },
             "server": { "androidScheme": "https" }
-          }
-          EOF
+          }' > capacitor.config.json
+          cat package.json
+          cat capacitor.config.json
+
+      - name: Install Capacitor and add Android
+        run: |
           npm install
           npx cap add android
           npx cap sync android
@@ -106,33 +82,28 @@ PY
       - name: Build debug APK
         working-directory: android
         run: |
-          set -e
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
 
       - name: Collect APK
         run: |
-          set -e
-          APK=$(find android/app/build/outputs/apk -name '*.apk' | head -1)
-          echo "Found $APK"
+          APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          echo "APK=$APK"
           cp "$APK" frank.apk
           ls -la frank.apk
 
-      - name: Upload APK artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: frank-apk
           path: frank.apk
-          if-no-files-found: error
 
-      - name: Publish to Releases
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: FrankGPT Android app (latest)
-          body: |
-            Latest FrankGPT debug APK (free standalone path works offline).
-            Install: https://github.com/${{ github.repository }}/releases/download/apk-latest/frank.apk
+          name: FrankGPT Android (latest)
+          body: Debug APK for FrankGPT. Free standalone mode works without a server.
           files: frank.apk
           make_latest: false
         env:
