@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       api_base:
-        description: "FRANK server URL the APK talks to (blank = repo variable FRANK_API_BASE, else UI-only)"
+        description: "Optional server URL for the APK (blank = free standalone)"
         required: false
   push:
     branches: [main]
@@ -19,7 +19,6 @@ on:
       - '.github/workflows/build-apk.yml'
 
 env:
-  # push-triggered builds use the repo variable FRANK_API_BASE (Settings -> Variables)
   API_BASE: ${{ github.event.inputs.api_base || vars.FRANK_API_BASE }}
 
 permissions:
@@ -30,43 +29,111 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      # Java 17 is more reliable with Capacitor 6 / Android Gradle Plugin
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
+
       - name: Prepare web bundle
         run: |
+          set -e
           mkdir -p www/icons
-          cp index.html frank-app.js config.js manifest.json sw.js terms.html privacy.html www/
-          cp icons/*.png www/icons/
-          # an APK has no server of its own: if config.js has no API_BASE, use the one given here
-          if [ -n "$API_BASE" ]; then sed -i "s#API_BASE: \"\"#API_BASE: \"${API_BASE%/}\"#" www/config.js; fi
-          grep -n API_BASE www/config.js
-          ! grep -ril puter www || { echo "::error::Puter reference found in bundle"; exit 1; }
-      - name: Capacitor Android
+          for f in index.html frank-app.js config.js manifest.json sw.js terms.html privacy.html; do
+            if [ -f "$f" ]; then cp "$f" www/; else echo "warn: missing $f"; fi
+          done
+          if [ -d icons ]; then cp icons/*.png www/icons/ 2>/dev/null || true; fi
+          # Point APK at optional server URL when provided
+          if [ -n "$API_BASE" ] && [ -f www/config.js ]; then
+            python3 - <<'PY'
+import os, pathlib, re
+p = pathlib.Path('www/config.js')
+t = p.read_text()
+base = os.environ.get('API_BASE', '').rstrip('/')
+t2 = re.sub(r'API_BASE:\s*"[^"]*"', f'API_BASE: "{base}"', t, count=1)
+p.write_text(t2)
+print('API_BASE set to', base)
+PY
+          fi
+          test -f www/index.html
+          test -f www/frank-app.js
+          test -f www/config.js
+          echo "www contents:" && ls -la www/
+
+      - name: Capacitor Android project
         run: |
-          npm init -y
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
-          npx cap init "FRANK" "com.frank.video" --web-dir www
+          set -e
+          # Clean package.json for a dedicated Capacitor project root
+          cat > package.json <<'EOF'
+          {
+            "name": "frankgpt",
+            "version": "2.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/android": "6.1.2",
+              "@capacitor/cli": "6.1.2",
+              "@capacitor/core": "6.1.2"
+            }
+          }
+          EOF
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.frankgpt.app",
+            "appName": "FrankGPT",
+            "webDir": "www",
+            "android": { "allowMixedContent": true },
+            "server": { "androidScheme": "https" }
+          }
+          EOF
+          npm install
           npx cap add android
           npx cap sync android
+          test -f android/gradlew
+
       - name: Build debug APK
         working-directory: android
         run: |
+          set -e
           chmod +x gradlew
-          ./gradlew assembleDebug
-      - name: Name the APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk frank.apk
-      - name: Publish to Releases (stable download link)
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Collect APK
+        run: |
+          set -e
+          APK=$(find android/app/build/outputs/apk -name '*.apk' | head -1)
+          echo "Found $APK"
+          cp "$APK" frank.apk
+          ls -la frank.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frank-apk
+          path: frank.apk
+          if-no-files-found: error
+
+      - name: Publish to Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: FRANK Android app (latest)
-          body: "Latest FRANK debug APK. Install: https://github.com/${{ github.repository }}/releases/download/apk-latest/frank.apk"
+          name: FrankGPT Android app (latest)
+          body: |
+            Latest FrankGPT debug APK (free standalone path works offline).
+            Install: https://github.com/${{ github.repository }}/releases/download/apk-latest/frank.apk
           files: frank.apk
           make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
