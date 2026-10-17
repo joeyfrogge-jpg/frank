@@ -1,8 +1,7 @@
-server/data/
-__pycache__/
-*.pyc
+.DS_Store
 .env
-www/
-android/
+*.log
 node_modules/
-package*.json
+dist/
+.idea/
+.vscode/
