@@ -1,29 +1,45 @@
-/* frankgpt — free standalone */
+/* frankgpt — free standalone browser video creator
+   Multi-frame Pollinations sequence + crossfade + Ken Burns + MediaRecorder
+   Matches Wireframe Flow v0.3 UI */
 (function () {
   "use strict";
+
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+
   var CFG = window.FRANK_CONFIG || {};
+  var GOOGLE_CLIENT_ID = CFG.GOOGLE_CLIENT_ID || "723846891277-mpb630dmgkvsftdqpacv4dnukh5c207m.apps.googleusercontent.com";
+
   var state = {
     token: localStorage.getItem("frank_token") || "",
     guestKey: localStorage.getItem("frank_guest") || "",
-    user: null, googleProfile: null, style: "realistic", duration: 10, aspect: "9:16", busy: false, cat: "all"
+    user: null,
+    googleProfile: null,
+    style: "realistic",
+    duration: 10,
+    busy: false,
+    creditsLeft: Number(localStorage.getItem("frank_credits") || 30),
+    creditsMax: Number(localStorage.getItem("frank_credits_max") || 30),
+    plan: localStorage.getItem("frank_plan") || "spark",
+    lastBlob: null,
+    lastMeta: null,
+    currentFeedPost: null
   };
-  var LIB_KEY = "frank_lib_v2";
-  var FEED_KEY = "frank_feed_v2";
-  var FEED_REMOTE_KEY = "frank_feed_remote_url";
+
+  var LIB_KEY = "frank_lib_v3";
+  var FEED_KEY = "frank_feed_v3";
   var STYLE_HINTS = {
     realistic: "photorealistic, highly detailed, natural lighting, 4k",
-    cinematic: "cinematic lighting, film still, anamorphic, dramatic",
-    animated: "animated, stylized, vibrant colors, clean shapes",
-    abstract: "abstract, surreal, artistic composition, bold forms"
+    cinematic: "cinematic lighting, film still, anamorphic, dramatic atmosphere",
+    animated: "animated, stylized, vibrant colors, clean shapes, illustration",
+    abstract: "abstract, surreal, artistic composition, bold forms, dreamlike"
   };
   var RANDOM_PROMPTS = [
     "A neon-lit alley in the rain at night, reflections on wet pavement",
     "Golden hour over rolling hills, soft wind through tall grass",
     "A sleek spaceship docking at an orbital station above Earth",
     "Macro shot of dew on a spiderweb at sunrise",
-    "Crowded Tokyo crossing with glowing signs",
+    "Crowded Tokyo crossing with glowing signs and motion blur",
     "A lone lighthouse on a cliff during a storm",
     "Underwater coral reef with shafts of sunlight",
     "Vintage train crossing a mountain bridge in autumn",
@@ -32,440 +48,712 @@
     "Cozy cabin interior with fireplace and falling snow outside",
     "Aerial view of a winding river through dense forest"
   ];
-  var TRENDING = [
-    { title: "City Vibes", prompt: "cinematic night city skyline with light trails", cat: "urban" },
-    { title: "Ocean Energy", prompt: "powerful ocean waves crashing on rocks at sunrise", cat: "nature" },
-    { title: "Into the Wild", prompt: "misty forest path with sunbeams through trees", cat: "nature" },
-    { title: "Forest Escape", prompt: "aerial drone shot over dense green forest canopy", cat: "nature" },
-    { title: "Neon Dreams", prompt: "cyberpunk street market neon reflections rain", cat: "urban" },
-    { title: "Abstract Flow", prompt: "abstract fluid ink in water purple and cyan", cat: "abstract" }
+  var DEMO_FEED = [
+    { id: "d1", title: "Neon Tide", prompt: "neon ocean waves at night", style: "cinematic", duration: 10, handle: "@HANDLE", live: true, gradient: "linear-gradient(135deg,#7c3aed,#ec4899)", comments: [] },
+    { id: "d2", title: "Glass Hours", prompt: "crystal hourglass in soft light", style: "animated", duration: 5, handle: "@HANDLE", live: false, gradient: "linear-gradient(135deg,#0d9488,#14b8a6)", comments: [] },
+    { id: "d3", title: "Paper Moon", prompt: "origami moon over quiet lake", style: "abstract", duration: 10, handle: "@HANDLE", live: true, gradient: "linear-gradient(135deg,#4f46e5,#818cf8)", comments: [] },
+    { id: "d4", title: "Velvet Static", prompt: "soft static on vintage TV", style: "cinematic", duration: 15, handle: "@HANDLE", live: false, gradient: "linear-gradient(135deg,#c2410c,#f97316)", comments: [] },
+    { id: "d5", title: "Low Orbit", prompt: "earth from low orbit at dawn", style: "realistic", duration: 5, handle: "@HANDLE", live: false, gradient: "linear-gradient(135deg,#1d4ed8,#3b82f6)", comments: [] }
   ];
-  function apiBase() {
-    try { var ls = JSON.parse(localStorage.getItem("frank_api") || "\"\""); if (ls) return String(ls).replace(/\/+$/, ""); } catch (e) {}
-    return (CFG.API_BASE || "").toString().replace(/\/+$/, "");
-  }
-  function toast(msg, ms) {
-    ms = ms || 3200; var el = $("#toast"); if (!el) { try { alert(msg); } catch (e) {} return; }
-    el.textContent = msg; el.classList.add("on"); clearTimeout(el._t);
-    el._t = setTimeout(function () { el.classList.remove("on"); }, ms);
-  }
-  function showStat(msg, err, ok) {
-    var el = $("#stat"); if (!el) return;
-    el.className = "status on" + (err ? " err" : ok ? " ok" : ""); el.textContent = msg;
-  }
-  function ensureGuest() {
-    if (!state.guestKey && !state.token) {
-      state.guestKey = "g_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-      localStorage.setItem("frank_guest", state.guestKey);
-    }
-  }
+
   function loadLib() { try { return JSON.parse(localStorage.getItem(LIB_KEY) || "[]"); } catch (e) { return []; } }
-  function saveLib(items) { try { localStorage.setItem(LIB_KEY, JSON.stringify(items.slice(0, 40))); } catch (e) {} }
-  function loadFeedStore() { try { return JSON.parse(localStorage.getItem(FEED_KEY) || "[]"); } catch (e) { return []; } }
-  function saveFeedStore(items) { try { localStorage.setItem(FEED_KEY, JSON.stringify(items.slice(0, 60))); } catch (e) {} }
-  function feedRemoteUrl() {
-    try { return (localStorage.getItem(FEED_REMOTE_KEY) || CFG.FEED_URL || "").trim().replace(/\/+$/, ""); } catch (e) { return ""; }
-  }
-  async function syncFeedFromRemote() {
-    var url = feedRemoteUrl(); if (!url) return loadFeedStore();
+  function saveLib(arr) { try { localStorage.setItem(LIB_KEY, JSON.stringify(arr.slice(0, 40))); } catch (e) {} }
+  function loadFeed() {
     try {
-      var res = await fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "t=" + Date.now());
-      if (!res.ok) return loadFeedStore();
-      var data = await res.json();
-      var posts = Array.isArray(data) ? data : (data.posts || []);
-      if (posts.length) saveFeedStore(posts);
-      return loadFeedStore();
-    } catch (e) { return loadFeedStore(); }
-  }
-  async function pushFeedToRemote(posts) {
-    var url = feedRemoteUrl(); if (!url) return;
-    try {
-      await fetch(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ posts: posts.slice(0, 40) }) });
+      var f = JSON.parse(localStorage.getItem(FEED_KEY) || "null");
+      if (Array.isArray(f) && f.length) return f;
     } catch (e) {}
+    return DEMO_FEED.slice();
   }
-  function videoToThumb(dataUrl) {
-    return new Promise(function (resolve) {
-      try {
-        var v = document.createElement("video"); v.muted = true; v.playsInline = true; v.src = dataUrl;
-        var done = false;
-        function finish(out) { if (done) return; done = true; resolve(out || ""); }
-        v.onloadeddata = function () { try { v.currentTime = 0.2; } catch (e) { finish(""); } };
-        v.onseeked = function () {
-          try {
-            var c = document.createElement("canvas"); c.width = 320; c.height = 180;
-            c.getContext("2d").drawImage(v, 0, 0, 320, 180);
-            finish(c.toDataURL("image/jpeg", 0.7));
-          } catch (e) { finish(""); }
-        };
-        v.onerror = function () { finish(""); };
-        setTimeout(function () { finish(""); }, 4000);
-      } catch (e) { resolve(""); }
-    });
-  }
+  function saveFeed(arr) { try { localStorage.setItem(FEED_KEY, JSON.stringify(arr.slice(0, 60))); } catch (e) {} }
+
   function showScreen(name) {
     $$(".screen").forEach(function (s) { s.classList.remove("on"); });
-    var el = $("#screen-" + name); if (el) el.classList.add("on");
-    $$("#nav button[data-screen]").forEach(function (b) {
-      var isFab = b.classList.contains("fab");
-      if (isFab) b.classList.toggle("on", name === "create");
-      else b.classList.toggle("on", b.getAttribute("data-screen") === name);
+    var el = $("#screen-" + name);
+    if (el) el.classList.add("on");
+    $$("#nav button").forEach(function (b) {
+      var target = b.getAttribute("data-screen");
+      b.classList.toggle("on", target === name);
     });
-    if (name === "explore") {
-      $$("#nav button[data-screen=explore]").forEach(function (b) { b.classList.add("on"); });
-      renderTrending();
-      syncFeedFromRemote().then(function () { renderCommunityFeed(); });
+    if (name === "home") renderHome();
+    if (name === "plans") refreshPlanUI();
+    if (name === "settings") refreshPlanUI();
+  }
+
+  function setStatus(msg, type) {
+    var el = $("#status");
+    if (!el) return;
+    el.className = "status on" + (type === "err" ? " err" : type === "ok" ? " ok" : "");
+    el.textContent = msg || "";
+  }
+
+  function alertModal(title, body) {
+    var m = $("#modal-alert");
+    if (!m) { alert(title + "\n" + (body || "")); return; }
+    $("#modal-alert-title").textContent = title;
+    $("#modal-alert-body").textContent = body || "";
+    m.classList.add("on");
+  }
+
+  function refreshCredits() {
+    localStorage.setItem("frank_credits", String(state.creditsLeft));
+    localStorage.setItem("frank_credits_max", String(state.creditsMax));
+    ["credits-home", "credits-create", "credits-plans", "credits-set"].forEach(function (id) {
+      var el = $("#" + id); if (el) el.textContent = state.creditsLeft;
+    });
+    ["credits-max-home", "credits-max-create", "credits-max-plans", "credits-max-set"].forEach(function (id) {
+      var el = $("#" + id); if (el) el.textContent = state.creditsMax;
+    });
+    var cost = state.duration;
+    var costEl = $("#gen-cost");
+    if (costEl) costEl.textContent = cost;
+  }
+
+  function refreshAvatars() {
+    var pic = state.googleProfile && state.googleProfile.picture;
+    var name = (state.googleProfile && state.googleProfile.name) || (state.user && state.user.name) || "G";
+    var initial = (name || "G").charAt(0).toUpperCase();
+    ["avatar-home", "avatar-create", "avatar-plans", "avatar-set"].forEach(function (id) {
+      var el = $("#" + id);
+      if (!el) return;
+      if (pic) {
+        el.style.backgroundImage = "url(" + pic + ")";
+        el.textContent = "";
+      } else {
+        el.style.backgroundImage = "";
+        el.textContent = initial;
+      }
+    });
+  }
+
+  function refreshPlanUI() {
+    var plans = {
+      spark: { name: "Spark", sub: "Free · 30 credits / month" },
+      maker: { name: "Maker", sub: "$9.99 · 400 credits / month" },
+      director: { name: "Director", sub: "$24.99 · 1200 credits / month" },
+      studio: { name: "Studio", sub: "$18 / user · team" }
+    };
+    var p = plans[state.plan] || plans.spark;
+    var nameEl = $("#plan-name");
+    var subEl = $("#plan-sub");
+    var bar = $("#plan-bar");
+    if (nameEl) nameEl.textContent = p.name;
+    if (subEl) subEl.textContent = p.sub;
+    if (bar) {
+      var pct = Math.max(0, Math.min(100, (state.creditsLeft / state.creditsMax) * 100));
+      bar.style.width = pct + "%";
     }
-    if (name === "library") renderLibrary();
-    if (name === "settings") refreshSettings();
+    var left = $("#plan-cr-left");
+    var max = $("#plan-cr-max");
+    if (left) left.textContent = state.creditsLeft;
+    if (max) max.textContent = state.creditsMax;
   }
-  function enterApp() {
-    var gate = $("#gate"); if (gate) gate.classList.add("off");
-    var nav = $("#nav"); if (nav) nav.style.display = "flex";
-    showScreen("explore");
+
+  function renderHome() {
+    var feed = loadFeed();
+    var grid = $("#feed-grid");
+    var feat = $("#feed-featured");
+    if (!grid) return;
+
+    if (feed.length) {
+      var first = feed[0];
+      feat.style.display = "block";
+      $("#feat-thumb").style.background = first.thumb
+        ? "url(" + first.thumb + ") center/cover"
+        : (first.gradient || "linear-gradient(135deg,#7c3aed,#ec4899)");
+      $("#feat-title").textContent = first.title || "Untitled";
+      $("#feat-meta").textContent = (first.handle || "@user") + " · " + (first.style || "").toUpperCase() + " · 0:" + String(first.duration || 10).padStart(2, "0");
+      feat.onclick = function () { openFeedPost(first); };
+
+      grid.innerHTML = feed.slice(1).map(function (p) {
+        var bg = p.thumb
+          ? "url(" + p.thumb + ") center/cover"
+          : (p.gradient || "linear-gradient(135deg,#312e81,#1e1b4b)");
+        return '<div class="feed-card" data-id="' + p.id + '">' +
+          (p.live ? '<span class="badge-live">LIVE</span>' : '') +
+          '<div class="thumb" style="background:' + bg + '"></div>' +
+          '<div class="overlay"><div class="title">' + escapeHtml(p.title || "Untitled") + '</div>' +
+          '<div class="meta">' + escapeHtml((p.style || "").toUpperCase()) + " · 0:" + String(p.duration || 10).padStart(2, "0") + '</div></div></div>';
+      }).join("");
+      $$(".feed-card", grid).forEach(function (card) {
+        card.onclick = function () {
+          var id = card.getAttribute("data-id");
+          var post = feed.find(function (x) { return x.id === id; });
+          if (post) openFeedPost(post);
+        };
+      });
+    } else {
+      feat.style.display = "none";
+      grid.innerHTML = "";
+    }
+
+    var lib = loadLib();
+    var lg = $("#lib-grid");
+    if (lg) {
+      if (!lib.length) {
+        lg.innerHTML = '<div class="lib-empty-inline">No creations yet — make one on Create.</div>';
+      } else {
+        lg.innerHTML = lib.map(function (item) {
+          var bg = item.thumb ? "url(" + item.thumb + ") center/cover" : "linear-gradient(135deg,#1e1b4b,#312e81)";
+          return '<div class="lib-card" data-id="' + item.id + '"><div class="thumb" style="background:' + bg + '"></div>' +
+            '<span class="dur">0:' + String(item.duration || 10).padStart(2, "0") + '</span></div>';
+        }).join("");
+        $$(".lib-card", lg).forEach(function (card) {
+          card.onclick = function () {
+            var id = card.getAttribute("data-id");
+            var item = lib.find(function (x) { return x.id === id; });
+            if (item && item.blobUrl) {
+              var v = $("#result-video");
+              if (v) { v.src = item.blobUrl; v.style.display = "block"; }
+              showScreen("create");
+            }
+          };
+        });
+      }
+    }
   }
-  function goGuest() {
-    ensureGuest(); state.token = ""; state.googleProfile = null;
-    localStorage.removeItem("frank_token"); localStorage.removeItem("frank_google");
-    state.user = { name: "Guest", plan: "guest" }; enterApp(); toast("Welcome — browsing as Guest");
+
+  function escapeHtml(s) {
+    var d = document.createElement("div"); d.textContent = s; return d.innerHTML;
   }
-  function pollinationsUrl(prompt, w, h, seed) {
-    var q = encodeURIComponent((prompt || "cinematic scene").slice(0, 200));
-    var s = (typeof seed === "number" ? seed : Math.floor(Math.random() * 1e9));
-    return "https://image.pollinations.ai/prompt/" + q + "?width=" + (w || 768) + "&height=" + (h || 1344) + "&nologo=true&enhance=true&seed=" + s;
+
+  function openFeedPost(post) {
+    state.currentFeedPost = post;
+    var m = $("#modal-feed");
+    if (!m) return;
+    var thumb = $("#modal-feed-thumb");
+    if (thumb) {
+      if (post.videoUrl) {
+        thumb.innerHTML = '<video src="' + post.videoUrl + '" controls playsinline style="width:100%;border-radius:12px"></video>';
+      } else if (post.thumb) {
+        thumb.innerHTML = '<img src="' + post.thumb + '" style="width:100%;border-radius:12px" alt="">';
+      } else {
+        thumb.innerHTML = '<div style="aspect-ratio:16/9;background:' + (post.gradient || "#222") + ';border-radius:12px"></div>';
+      }
+    }
+    $("#modal-feed-title").textContent = post.title || "Untitled";
+    $("#modal-feed-meta").textContent = (post.handle || "@user") + " · " + (post.style || "").toUpperCase() + " · " + (post.duration || 10) + "s";
+    renderComments(post);
+    m.classList.add("on");
   }
-  function loadImage(url) {
+
+  function renderComments(post) {
+    var list = $("#modal-comments");
+    if (!list) return;
+    var comments = post.comments || [];
+    if (!comments.length) {
+      list.innerHTML = '<div class="dim">No comments yet.</div>';
+    } else {
+      list.innerHTML = comments.map(function (c) {
+        return '<div class="comment"><b>' + escapeHtml(c.author || "user") + '</b> ' + escapeHtml(c.text || "") + '</div>';
+      }).join("");
+    }
+  }
+
+  function isRateLimitImage(img) {
+    try {
+      var c = document.createElement("canvas");
+      c.width = 8; c.height = 8;
+      var ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0, 8, 8);
+      var d = ctx.getImageData(0, 0, 8, 8).data;
+      var yellow = 0;
+      for (var i = 0; i < d.length; i += 4) {
+        if (d[i] > 180 && d[i + 1] > 160 && d[i + 2] < 100) yellow++;
+      }
+      return yellow > 20;
+    } catch (e) { return false; }
+  }
+
+  function loadImage(url, attempt) {
+    attempt = attempt || 1;
     return new Promise(function (resolve, reject) {
-      var img = new Image(); img.crossOrigin = "anonymous";
-      img.onload = function () { resolve(img); };
-      img.onerror = function () { reject(new Error("Could not load image")); };
+      var img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function () {
+        if (isRateLimitImage(img) && attempt < 4) {
+          setStatus("Rate limit detected — waiting 50s then retrying (" + attempt + "/3)…");
+          setTimeout(function () {
+            loadImage(url + (url.indexOf("?") >= 0 ? "&" : "?") + "r=" + Date.now(), attempt + 1)
+              .then(resolve).catch(reject);
+          }, 50000);
+        } else if (isRateLimitImage(img)) {
+          reject(new Error("Free image limit reached. Wait ~45s and try again, or use a different prompt."));
+        } else {
+          resolve(img);
+        }
+      };
+      img.onerror = function () {
+        if (attempt < 3) {
+          setTimeout(function () {
+            loadImage(url + (url.indexOf("?") >= 0 ? "&" : "?") + "r=" + Date.now(), attempt + 1)
+              .then(resolve).catch(reject);
+          }, 3000);
+        } else reject(new Error("Could not load image. Check connection."));
+      };
       img.src = url;
     });
   }
-  function looksLikeRateLimitCard(img) {
-    try {
-      var c = document.createElement("canvas"); c.width = 48; c.height = 48;
-      var ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0, 48, 48);
-      var d = ctx.getImageData(0, 0, 48, 48).data; var yellow = 0, total = 48 * 48;
-      for (var i = 0; i < d.length; i += 4) {
-        if (d[i] > 175 && d[i + 1] > 155 && d[i + 2] < 130) yellow++;
-      }
-      return yellow / total > 0.55;
-    } catch (e) { return false; }
-  }
-  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-  async function loadGeneratedImage(prompt, w, h, onStatus) {
-    var attempts = 3, lastErr = null;
-    for (var i = 0; i < attempts; i++) {
-      try {
-        if (i > 0) { onStatus("Free image limit — waiting 50s before retry " + (i + 1) + "/" + attempts + "…"); await sleep(50000); }
-        else onStatus("FrankGPT · composing frame…");
-        var img = await loadImage(pollinationsUrl(prompt, w, h, Math.floor(Math.random() * 1e9)));
-        if (looksLikeRateLimitCard(img)) { lastErr = new Error("Free image limit reached (about 1 every 45 seconds). Wait and try again."); continue; }
-        return img;
-      } catch (e) { lastErr = e; }
+
+  function drawCover(ctx, img, w, h, scale, ox, oy) {
+    var iw = img.naturalWidth || img.width;
+    var ih = img.naturalHeight || img.height;
+    var imgAspect = iw / ih;
+    var canAspect = w / h;
+    var dw, dh;
+    if (imgAspect > canAspect) {
+      dh = h * scale;
+      dw = dh * imgAspect;
+    } else {
+      dw = w * scale;
+      dh = dw / imgAspect;
     }
-    throw lastErr || new Error("Could not generate image");
+    var dx = (w - dw) / 2 + ox * w;
+    var dy = (h - dh) / 2 + oy * h;
+    ctx.drawImage(img, dx, dy, dw, dh);
   }
-  function kenBurnsVideo(img, seconds, aspect) {
+
+  /** Multi-frame sequence: 3 related stills + crossfades + stronger Ken Burns.
+   *  Feels like a short AI video instead of a single zoomed photo. */
+  function multiFrameVideo(images, seconds, w, h) {
     return new Promise(function (resolve, reject) {
-      var parts = (aspect || "9:16").split(":");
-      var arW = Number(parts[0]) || 9, arH = Number(parts[1]) || 16;
-      var h = 640, w = Math.round(h * arW / arH); if (w % 2) w++;
-      var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
-      var ctx = canvas.getContext("2d"); var stream = canvas.captureStream(24);
-      var mime = "";
-      if (typeof MediaRecorder !== "undefined") {
-        if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) mime = "video/webm;codecs=vp9";
-        else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) mime = "video/webm;codecs=vp8";
-        else if (MediaRecorder.isTypeSupported("video/webm")) mime = "video/webm";
+      if (!images || !images.length) {
+        reject(new Error("No frames to animate"));
+        return;
       }
-      if (!mime) { reject(new Error("This browser cannot record video. Try Chrome or Safari.")); return; }
+      var canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext("2d");
+      var stream = canvas.captureStream(24);
+      var rec;
+      try {
+        rec = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9", videoBitsPerSecond: 3200000 });
+      } catch (e1) {
+        try {
+          rec = new MediaRecorder(stream, { mimeType: "video/webm", videoBitsPerSecond: 2500000 });
+        } catch (e2) {
+          reject(new Error("MediaRecorder not supported in this browser."));
+          return;
+        }
+      }
       var chunks = [];
-      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2500000 });
       rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
-      rec.onerror = function () { reject(new Error("Recording failed")); };
       rec.onstop = function () {
-        var blob = new Blob(chunks, { type: mime });
-        var reader = new FileReader();
-        reader.onloadend = function () { resolve({ blobUrl: URL.createObjectURL(blob), dataUrl: reader.result }); };
-        reader.readAsDataURL(blob);
+        resolve(new Blob(chunks, { type: "video/webm" }));
       };
-      var t0 = performance.now();
-      var dur = Math.max(4, Math.min(seconds || 10, 30)) * 1000;
-      var scale0 = 1.0, scale1 = 1.16;
-      var panX = (Math.random() - 0.5) * 0.1, panY = (Math.random() - 0.5) * 0.1;
-      function draw(scale, ox, oy) {
-        var iw = img.naturalWidth, ih = img.naturalHeight, ir = iw / ih, cr = w / h, dw, dh;
-        if (ir > cr) { dh = h * scale; dw = dh * ir; } else { dw = w * scale; dh = dw / ir; }
-        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h);
-        ctx.drawImage(img, (w - dw) / 2 + ox * w, (h - dh) / 2 + oy * h, dw, dh);
-      }
-      function frame(now) {
-        var p = Math.min(1, (now - t0) / dur);
-        var ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-        draw(scale0 + (scale1 - scale0) * ease, panX * ease, panY * ease);
-        if (now - t0 < dur) requestAnimationFrame(frame);
-        else { try { rec.stop(); } catch (e) { reject(e); } }
-      }
-      rec.start(100); requestAnimationFrame(frame);
-    });
-  }
-  async function frankGenerate(prompt, seconds, aspect, onStatus) {
-    onStatus = onStatus || function () {};
-    var parts = (aspect || "9:16").split(":");
-    var arW = Number(parts[0]) || 9, arH = Number(parts[1]) || 16;
-    var ih = 1024, iw = Math.round(ih * arW / arH);
-    var img = await loadGeneratedImage(prompt, iw, ih, onStatus);
-    var secs = Math.min(seconds || 10, 30);
-    onStatus("FrankGPT · rendering " + secs + "s clip…");
-    return kenBurnsVideo(img, secs, aspect);
-  }
-  function googleClientId() {
-    return (CFG.GOOGLE_CLIENT_ID || localStorage.getItem("frank_google_client_id") || "").trim();
-  }
-  async function loadGis() {
-    if (window.google && window.google.accounts) return;
-    await new Promise(function (res, rej) {
-      var s = document.createElement("script"); s.src = "https://accounts.google.com/gsi/client"; s.async = true;
-      s.onload = res; s.onerror = function () { rej(new Error("Could not load Google Sign-In")); };
-      document.head.appendChild(s);
-    });
-  }
-  var btnGuest = $("#btn-guest");
-  if (btnGuest) btnGuest.addEventListener("click", function (e) { e.preventDefault(); goGuest(); });
-  var btnEmail = $("#btn-email");
-  if (btnEmail) btnEmail.addEventListener("click", function (e) { e.preventDefault(); toast("Email sign-in needs a server. Use Guest or Google."); });
-  var btnPhone = $("#btn-phone");
-  if (btnPhone) btnPhone.addEventListener("click", function (e) { e.preventDefault(); toast("Phone sign-in needs a server. Use Guest or Google."); });
-  var btnGoogle = $("#btn-google");
-  if (btnGoogle) {
-    btnGoogle.addEventListener("click", async function (e) {
-      e.preventDefault();
-      var cid = googleClientId();
-      if (!cid) { toast("Add your Google OAuth Client ID in Settings."); return; }
-      btnGoogle.disabled = true;
-      try {
-        await loadGis();
-        window.google.accounts.id.initialize({
-          client_id: cid,
-          callback: function (resp) {
-            try {
-              var raw = resp.credential.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-              var payload = JSON.parse(atob(raw));
-              state.googleProfile = { name: payload.name || payload.email || "Creator", email: payload.email || "", picture: payload.picture || "", sub: payload.sub };
-              state.token = "google_" + (payload.sub || Date.now());
-              state.user = { name: state.googleProfile.name, plan: "google", picture: state.googleProfile.picture };
-              localStorage.setItem("frank_token", state.token);
-              localStorage.setItem("frank_google", JSON.stringify(state.googleProfile));
-              enterApp(); toast("Signed in as " + state.user.name);
-            } catch (err) { toast("Google sign-in failed"); }
-          }
-        });
-        window.google.accounts.id.prompt();
-      } catch (err) { toast(err.message || "Google unavailable"); }
-      finally { btnGoogle.disabled = false; }
-    });
-  }
-  var btnSignout = $("#btn-signout");
-  if (btnSignout) {
-    btnSignout.addEventListener("click", function () {
-      state.token = ""; state.user = null; state.googleProfile = null;
-      localStorage.removeItem("frank_token"); localStorage.removeItem("frank_google");
-      var gate = $("#gate"); if (gate) gate.classList.remove("off");
-      var nav = $("#nav"); if (nav) nav.style.display = "none";
-      $$(".screen").forEach(function (s) { s.classList.remove("on"); });
-      toast("Signed out");
-    });
-  }
-  var promptEl = $("#prompt");
-  if (promptEl) promptEl.addEventListener("input", function () {
-    var c = $("#prompt-count"); if (c) c.textContent = (promptEl.value || "").length;
-  });
-  var btnRandom = $("#btn-random-prompt");
-  if (btnRandom) btnRandom.addEventListener("click", function () {
-    var p = RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)];
-    if (promptEl) { promptEl.value = p; var c = $("#prompt-count"); if (c) c.textContent = String(p.length); }
-    toast("Prompt filled — edit or Generate");
-  });
-  $$("#styles .chip").forEach(function (c) {
-    c.addEventListener("click", function () {
-      $$("#styles .chip").forEach(function (x) { x.classList.remove("on"); });
-      c.classList.add("on"); state.style = c.getAttribute("data-style") || "realistic";
-    });
-  });
-  $$("#durs .chip").forEach(function (c) {
-    c.addEventListener("click", function () {
-      $$("#durs .chip").forEach(function (x) { x.classList.remove("on"); });
-      c.classList.add("on"); state.duration = Number(c.getAttribute("data-dur")) || 10;
-    });
-  });
-  $$("#aspects .chip").forEach(function (c) {
-    c.addEventListener("click", function () {
-      $$("#aspects .chip").forEach(function (x) { x.classList.remove("on"); });
-      c.classList.add("on"); state.aspect = c.getAttribute("data-aspect") || "9:16";
-    });
-  });
-  function enhance(prompt, style) {
-    var tag = STYLE_HINTS[style] || ""; return tag ? prompt.trim() + ". " + tag : prompt.trim();
-  }
-  var goBtn = $("#go");
-  if (goBtn) {
-    goBtn.addEventListener("click", async function () {
-      if (state.busy) return;
-      var raw = (promptEl && promptEl.value || "").trim();
-      if (!raw) { showStat("Describe your idea first.", true); return; }
-      ensureGuest(); state.busy = true; goBtn.disabled = true;
-      var result = $("#result"); if (result) result.classList.remove("on");
-      try {
-        var out = await frankGenerate(enhance(raw, state.style), state.duration, state.aspect, showStat);
-        var vid = $("#result-vid"); if (vid) vid.src = out.blobUrl;
-        if (result) result.classList.add("on");
-        var entry = { id: "fg_" + Date.now(), prompt: raw, style: state.style, duration: state.duration, aspect: state.aspect, dataUrl: out.dataUrl, created: Date.now(), author: (state.user && state.user.name) || "Guest" };
-        var items = loadLib(); items.unshift(entry); saveLib(items);
-        showStat("FrankGPT " + state.duration + "s clip ready.", false, true); toast("Video ready");
-        var thumb = await videoToThumb(out.dataUrl);
-        var feed = loadFeedStore();
-        feed.unshift({ id: entry.id, prompt: raw, title: raw.slice(0, 48), thumb: thumb, dataUrl: out.dataUrl, author: entry.author, picture: (state.googleProfile && state.googleProfile.picture) || "", created: Date.now(), comments: [] });
-        saveFeedStore(feed); pushFeedToRemote(feed); toast("Posted to community feed");
-      } catch (err) { showStat(err.message || "Generation failed", true); }
-      finally { state.busy = false; goBtn.disabled = false; }
-    });
-  }
-  function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
-  function renderTrending() {
-    var grid = $("#trending-grid"); if (!grid) return;
-    var list = TRENDING.filter(function (t) { return state.cat === "all" || t.cat === state.cat; });
-    var grads = ["linear-gradient(135deg,#1e3a5f,#0f172a)","linear-gradient(135deg,#14532d,#052e16)","linear-gradient(135deg,#4c1d95,#1e1b4b)","linear-gradient(135deg,#7c2d12,#1c1917)","linear-gradient(135deg,#0e7490,#164e63)","linear-gradient(135deg,#9f1239,#4c0519)"];
-    grid.innerHTML = list.map(function (t, i) {
-      return '<div class="t-card" data-prompt="' + esc(t.prompt) + '"><div class="thumb" style="background:' + grads[i % grads.length] + '"><div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div><div class="meta"><div class="title">' + esc(t.title) + '</div><div class="views">Tap to create</div></div></div>';
-    }).join("");
-    grid.querySelectorAll(".t-card").forEach(function (card) {
-      card.addEventListener("click", function () {
-        var p = card.getAttribute("data-prompt") || "";
-        if (promptEl) { promptEl.value = p; var c = $("#prompt-count"); if (c) c.textContent = String(p.length); }
-        showScreen("create"); toast("Prompt loaded — Generate when ready");
+      rec.onerror = function () { reject(new Error("Recording failed")); };
+
+      var n = images.length;
+      var start = performance.now();
+      var dur = seconds * 1000;
+      var motions = images.map(function (_, i) {
+        return {
+          scaleFrom: 1.0 + (i % 2) * 0.04,
+          scaleTo: 1.22 + (i % 3) * 0.06,
+          ox: (Math.random() - 0.5) * 0.14,
+          oy: (Math.random() - 0.5) * 0.12
+        };
       });
+
+      function easeInOut(p) {
+        return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      }
+
+      function draw(t) {
+        var p = Math.min(1, (t - start) / dur);
+        var segF = p * n;
+        var seg = Math.min(n - 1, Math.floor(segF));
+        var local = segF - seg;
+        var fade = 0;
+        if (local > 0.72 && seg < n - 1) {
+          fade = (local - 0.72) / 0.28;
+        }
+        var easeLocal = easeInOut(Math.min(1, local / 0.72));
+
+        var m0 = motions[seg];
+        var scale0 = m0.scaleFrom + (m0.scaleTo - m0.scaleFrom) * easeLocal;
+        var ox0 = m0.ox * (1 - easeLocal);
+        var oy0 = m0.oy * (1 - easeLocal);
+
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalAlpha = 1;
+        drawCover(ctx, images[seg], w, h, scale0, ox0, oy0);
+
+        if (fade > 0 && seg + 1 < n) {
+          var m1 = motions[seg + 1];
+          var scale1 = m1.scaleFrom + (m1.scaleTo - m1.scaleFrom) * (fade * 0.3);
+          ctx.globalAlpha = fade;
+          drawCover(ctx, images[seg + 1], w, h, scale1, m1.ox * 0.3, m1.oy * 0.3);
+          ctx.globalAlpha = 1;
+        }
+
+        if (p < 1) {
+          requestAnimationFrame(draw);
+        } else {
+          rec.stop();
+        }
+      }
+      rec.start(100);
+      requestAnimationFrame(draw);
     });
   }
-  function renderCommunityFeed() {
-    var grid = $("#feed-grid"); if (!grid) return;
-    var feed = loadFeedStore();
-    if (!feed.length) {
-      grid.innerHTML = '<p style="color:var(--dim);font-size:13px;grid-column:1/-1;padding:8px 0">No posts yet. Generate a video and it appears here with comments.</p>';
+
+  function videoToThumb(blob) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(blob);
+      var v = document.createElement("video");
+      v.muted = true;
+      v.playsInline = true;
+      v.src = url;
+      v.onloadeddata = function () {
+        v.currentTime = Math.min(0.5, (v.duration || 1) * 0.1);
+      };
+      v.onseeked = function () {
+        try {
+          var c = document.createElement("canvas");
+          c.width = 320;
+          c.height = 180;
+          c.getContext("2d").drawImage(v, 0, 0, 320, 180);
+          resolve(c.toDataURL("image/jpeg", 0.7));
+        } catch (e) {
+          resolve(null);
+        }
+        URL.revokeObjectURL(url);
+      };
+      v.onerror = function () { resolve(null); URL.revokeObjectURL(url); };
+    });
+  }
+
+  async function generate() {
+    if (state.busy) return;
+    var prompt = ($("#prompt").value || "").trim();
+    if (!prompt) {
+      setStatus("Describe your idea first.", "err");
       return;
     }
-    grid.innerHTML = feed.map(function (j) {
-      var media = j.dataUrl ? '<video src="' + j.dataUrl + '" muted playsinline preload="metadata"></video>' : (j.thumb ? '<img src="' + j.thumb + '" alt="">' : '');
-      var n = (j.comments && j.comments.length) || 0;
-      return '<div class="t-card" data-id="' + esc(j.id) + '"><div class="thumb">' + media + '<div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div><div class="meta"><div class="title">' + esc(j.title || j.prompt || "Clip") + '</div><div class="views">' + esc(j.author || "Creator") + (n ? (" · " + n + " comments") : "") + '</div></div></div>';
-    }).join("");
-    grid.querySelectorAll(".t-card").forEach(function (card) {
-      card.addEventListener("click", function () { openFeedPost(card.getAttribute("data-id")); });
-    });
-  }
-  function openFeedPost(id) {
-    var feed = loadFeedStore(); var j = null;
-    for (var i = 0; i < feed.length; i++) if (feed[i].id === id) { j = feed[i]; break; }
-    if (!j) return; if (!j.comments) j.comments = [];
-    var commentsHtml = j.comments.length ? j.comments.map(function (c) {
-      return '<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">' + esc(c.author || "User") + '</b><div style="font-size:13px;color:var(--muted);margin-top:2px">' + esc(c.text || "") + '</div></div>';
-    }).join("") : '<p style="color:var(--dim);font-size:13px">No comments yet.</p>';
-    var media = j.dataUrl ? '<video src="' + j.dataUrl + '" controls playsinline style="width:100%;border-radius:12px;background:#000;max-height:40vh"></video>' : (j.thumb ? '<img src="' + j.thumb + '" style="width:100%;border-radius:12px">' : '');
-    openModal(esc(j.title || "Post"), media + '<p style="margin:10px 0 4px;font-size:13px;color:var(--muted)">by ' + esc(j.author || "Creator") + '</p><p style="font-size:13px;margin:0 0 12px">' + esc(j.prompt || "") + '</p><div style="margin:12px 0 8px;font-weight:700;font-size:14px">Comments</div><div id="m-comments">' + commentsHtml + '</div><input class="field" id="m-comment" placeholder="Write a comment…" style="margin-top:10px"><div class="row" style="margin-top:10px"><button type="button" class="btn btn-outline" id="m-close">Close</button><button type="button" class="btn btn-primary" id="m-post-comment">Post comment</button></div>', function () {
-      var cl = $("#m-close"); if (cl) cl.onclick = closeModal;
-      var pc = $("#m-post-comment");
-      if (pc) pc.onclick = function () {
-        var text = ($("#m-comment") && $("#m-comment").value || "").trim();
-        if (!text) { toast("Write a comment first"); return; }
-        j.comments.push({ author: (state.user && state.user.name) || "Guest", text: text, created: Date.now() });
-        var all = loadFeedStore();
-        for (var i = 0; i < all.length; i++) if (all[i].id === j.id) all[i] = j;
-        saveFeedStore(all); pushFeedToRemote(all); toast("Comment posted"); closeModal(); renderCommunityFeed(); openFeedPost(j.id);
+    var cost = state.duration;
+    if (state.creditsLeft < cost) {
+      setStatus("Not enough credits. Upgrade on the Plans tab or wait for monthly refresh.", "err");
+      return;
+    }
+
+    state.busy = true;
+    $("#btn-generate").disabled = true;
+    $("#result-actions").classList.remove("on");
+    var v = $("#result-video");
+    var ph = $("#preview-ph");
+    v.style.display = "none";
+    v.removeAttribute("src");
+    ph.style.display = "block";
+
+    var styleHint = STYLE_HINTS[state.style] || STYLE_HINTS.realistic;
+    // Three sequential beats so the clip has motion / progression (not one still)
+    var variants = [
+      prompt + ", opening shot, establishing frame, " + styleHint + ", cinematic composition, high quality",
+      prompt + ", mid action, dynamic moment, camera closer, " + styleHint + ", high detail",
+      prompt + ", final beat, resolution, slight camera pull back, " + styleHint + ", dramatic lighting"
+    ];
+    var seedBase = Math.floor(Math.random() * 1e9);
+
+    try {
+      var frames = [];
+      for (var i = 0; i < variants.length; i++) {
+        setStatus("Generating frame " + (i + 1) + "/" + variants.length + "…");
+        var enc = encodeURIComponent(variants[i]);
+        var imgUrl = "https://image.pollinations.ai/prompt/" + enc +
+          "?width=768&height=1344&nologo=true&seed=" + (seedBase + i * 17);
+        var img = await loadImage(imgUrl);
+        frames.push(img);
+      }
+      setStatus("Compositing " + state.duration + "s multi-frame video…");
+      var blob = await multiFrameVideo(frames, state.duration, 720, 1280);
+      state.lastBlob = blob;
+      state.lastMeta = {
+        prompt: prompt,
+        style: state.style,
+        duration: state.duration,
+        created: Date.now()
       };
-    });
+      var url = URL.createObjectURL(blob);
+      v.src = url;
+      v.style.display = "block";
+      ph.style.display = "none";
+      $("#result-actions").classList.add("on");
+
+      state.creditsLeft = Math.max(0, state.creditsLeft - cost);
+      localStorage.setItem("frank_credits", String(state.creditsLeft));
+      refreshCredits();
+      refreshPlanUI();
+      setStatus("frankgpt " + state.duration + "s video ready.", "ok");
+    } catch (err) {
+      setStatus(err.message || String(err), "err");
+    } finally {
+      state.busy = false;
+      $("#btn-generate").disabled = false;
+    }
   }
-  function renderLibrary() {
-    var empty = $("#lib-empty"); var grid = $("#lib-grid"); if (!empty || !grid) return;
-    var local = loadLib();
-    if (!local.length) { empty.style.display = "flex"; grid.style.display = "none"; return; }
-    empty.style.display = "none"; grid.style.display = "grid";
-    grid.innerHTML = local.map(function (j) {
-      return '<div class="t-card"><div class="thumb"><video src="' + (j.dataUrl || "") + '" muted playsinline preload="metadata"></video><div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div><div class="meta"><div class="title">' + esc((j.prompt || "Untitled").slice(0, 40)) + '</div><div class="views">' + (j.duration || "?") + "s · " + esc(j.style || "") + "</div></div></div>";
-    }).join("");
-    grid.querySelectorAll(".t-card").forEach(function (card) {
+
+  async function saveToLibrary() {
+    if (!state.lastBlob) return;
+    var thumb = await videoToThumb(state.lastBlob);
+    var id = "lib-" + Date.now();
+    var blobUrl = URL.createObjectURL(state.lastBlob);
+    var item = {
+      id: id,
+      prompt: state.lastMeta.prompt,
+      style: state.lastMeta.style,
+      duration: state.lastMeta.duration,
+      thumb: thumb,
+      blobUrl: blobUrl,
+      created: Date.now()
+    };
+    var lib = loadLib();
+    lib.unshift(item);
+    saveLib(lib);
+    setStatus("Saved to library.", "ok");
+    renderHome();
+  }
+
+  async function postToFeed() {
+    if (!state.lastBlob) return;
+    var thumb = await videoToThumb(state.lastBlob);
+    var videoUrl = URL.createObjectURL(state.lastBlob);
+    var handle = "@guest";
+    if (state.googleProfile) handle = "@" + (state.googleProfile.name || "user").replace(/\s+/g, "").slice(0, 12);
+    else if (state.user) handle = "@" + (state.user.name || "user").replace(/\s+/g, "").slice(0, 12);
+
+    var post = {
+      id: "p-" + Date.now(),
+      title: (state.lastMeta.prompt || "Untitled").slice(0, 40),
+      prompt: state.lastMeta.prompt,
+      style: state.lastMeta.style,
+      duration: state.lastMeta.duration,
+      handle: handle,
+      live: true,
+      thumb: thumb,
+      videoUrl: videoUrl,
+      gradient: "linear-gradient(135deg,#7c3aed,#ec4899)",
+      comments: [],
+      created: Date.now()
+    };
+    var feed = loadFeed();
+    feed.unshift(post);
+    saveFeed(feed);
+    setStatus("Posted to live feed.", "ok");
+    renderHome();
+  }
+
+  function downloadVideo() {
+    if (!state.lastBlob) return;
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(state.lastBlob);
+    a.download = "frankgpt-" + Date.now() + ".webm";
+    a.click();
+  }
+
+  function enterApp(profile) {
+    state.user = profile || { name: "Guest", email: "" };
+    if (profile && profile.picture) state.googleProfile = profile;
+    localStorage.setItem("frank_token", state.token || "guest");
+    $("#gate").classList.add("off");
+    refreshCredits();
+    refreshAvatars();
+    refreshPlanUI();
+    showScreen("home");
+  }
+
+  function signOut() {
+    state.token = "";
+    state.user = null;
+    state.googleProfile = null;
+    localStorage.removeItem("frank_token");
+    localStorage.removeItem("frank_guest");
+    $("#gate").classList.remove("off");
+    showScreen("home");
+  }
+
+  function initGoogle() {
+    if (!GOOGLE_CLIENT_ID || !window.google || !google.accounts) return;
+    try {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: function (resp) {
+          try {
+            var payload = JSON.parse(atob(resp.credential.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"));
+            state.googleProfile = {
+              name: payload.name || payload.email || "Creator",
+              email: payload.email || "",
+              picture: payload.picture || "",
+              sub: payload.sub
+            };
+            state.token = "google_" + (payload.sub || Date.now());
+            state.user = { name: state.googleProfile.name, plan: "google" };
+            localStorage.setItem("frank_token", state.token);
+            localStorage.setItem("frank_google", JSON.stringify(state.googleProfile));
+            enterApp(state.googleProfile);
+          } catch (e) { alertModal("Sign-in error", "Could not parse Google response."); }
+        }
+      });
+    } catch (e) {}
+  }
+
+  function boot() {
+    // Nav
+    $$("#nav button[data-screen]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        showScreen(b.getAttribute("data-screen"));
+      });
+    });
+
+    // Gate buttons
+    var bg = $("#btn-google");
+    if (bg) bg.addEventListener("click", function () {
+      if (window.google && google.accounts) {
+        google.accounts.id.prompt();
+      } else {
+        alertModal("Google Sign-In", "Loading Google… try again in a moment, or continue as Guest.");
+      }
+    });
+    var be = $("#btn-email");
+    if (be) be.addEventListener("click", function () {
+      alertModal("Email sign-in", "Email login needs a backend. Use Guest or Google for now.");
+    });
+    var bp = $("#btn-phone");
+    if (bp) bp.addEventListener("click", function () {
+      alertModal("Phone sign-in", "Phone login needs a backend. Use Guest or Google for now.");
+    });
+    var bguest = $("#btn-guest");
+    if (bguest) bguest.addEventListener("click", function () {
+      state.token = "guest";
+      enterApp({ name: "Guest" });
+    });
+
+    // Create controls
+    var promptEl = $("#prompt");
+    if (promptEl) {
+      promptEl.addEventListener("input", function () {
+        var c = $("#prompt-count");
+        if (c) c.textContent = (promptEl.value || "").length;
+      });
+    }
+    var br = $("#btn-random");
+    if (br) br.addEventListener("click", function () {
+      var p = RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)];
+      if (promptEl) {
+        promptEl.value = p;
+        var c = $("#prompt-count");
+        if (c) c.textContent = String(p.length);
+      }
+    });
+    $$("#styles .chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        $$("#styles .chip").forEach(function (x) { x.classList.remove("on"); });
+        chip.classList.add("on");
+        state.style = chip.getAttribute("data-style") || "realistic";
+      });
+    });
+    $$("#durs .chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        $$("#durs .chip").forEach(function (x) { x.classList.remove("on"); });
+        chip.classList.add("on");
+        state.duration = Number(chip.getAttribute("data-dur")) || 10;
+        refreshCredits();
+      });
+    });
+    var go = $("#btn-generate");
+    if (go) go.addEventListener("click", generate);
+    var bs = $("#btn-save");
+    if (bs) bs.addEventListener("click", saveToLibrary);
+    var bf = $("#btn-post");
+    if (bf) bf.addEventListener("click", postToFeed);
+    var bd = $("#btn-download");
+    if (bd) bd.addEventListener("click", downloadVideo);
+
+    // Plans
+    $$(".plan-card").forEach(function (card) {
       card.addEventListener("click", function () {
-        var v = card.querySelector("video"); if (!v) return;
-        var rv = $("#result-vid"); if (rv) rv.src = v.src;
-        var res = $("#result"); if (res) res.classList.add("on");
-        showScreen("create"); showStat("Playing from library", false, true);
+        var plan = card.getAttribute("data-plan") || "spark";
+        state.plan = plan;
+        localStorage.setItem("frank_plan", plan);
+        if (plan === "spark") {
+          state.creditsMax = 30;
+          state.creditsLeft = Math.min(state.creditsLeft, 30);
+        } else if (plan === "maker") {
+          state.creditsMax = 400;
+          state.creditsLeft = Math.max(state.creditsLeft, 100);
+        } else if (plan === "director") {
+          state.creditsMax = 1200;
+          state.creditsLeft = Math.max(state.creditsLeft, 200);
+        }
+        refreshCredits();
+        refreshPlanUI();
+        alertModal("Plan selected", plan.charAt(0).toUpperCase() + plan.slice(1) + " selected (demo). Real billing needs a payment backend.");
       });
     });
-  }
-  $$("#cats .cat").forEach(function (c) {
-    c.addEventListener("click", function () {
-      $$("#cats .cat").forEach(function (x) { x.classList.remove("on"); });
-      c.classList.add("on"); state.cat = c.getAttribute("data-cat") || "all"; renderTrending();
-    });
-  });
-  function openModal(title, bodyHtml, bind) {
-    var m = $("#modal"); if (!m) return; m.innerHTML = "<h3>" + title + "</h3>" + bodyHtml;
-    var bg = $("#modal-bg"); if (bg) bg.classList.add("on"); if (bind) bind();
-  }
-  function closeModal() { var bg = $("#modal-bg"); if (bg) bg.classList.remove("on"); }
-  function refreshSettings() {
-    var name = (state.user && state.user.name) || (state.token ? "Signed in" : "Guest");
-    var el = $("#set-name"); if (el) el.textContent = name + (state.user && state.user.plan ? " · " + state.user.plan : "");
-    var urlEl = $("#set-server-url"); if (urlEl) urlEl.textContent = apiBase() || "Standalone free (no GPU)";
-  }
-  var setServer = $("#set-server");
-  if (setServer) {
-    setServer.addEventListener("click", function () {
-      var cur = apiBase() || "", cid = googleClientId();
-      openModal("FrankGPT Settings",
-        '<p style="color:var(--muted);font-size:13px;margin:0 0 12px">Optional server. Leave blank for free standalone.</p>' +
-        '<input class="field" id="m-server" value="' + esc(cur) + '" placeholder="https://your-server.example.com">' +
-        '<p style="color:var(--muted);font-size:13px;margin:16px 0 8px">Google OAuth Client ID</p>' +
-        '<input class="field" id="m-google" value="' + esc(cid) + '" placeholder="xxx.apps.googleusercontent.com">' +
-        '<p style="color:var(--muted);font-size:13px;margin:16px 0 8px">Public feed JSON URL (optional)</p>' +
-        '<input class="field" id="m-feed" value="' + esc(feedRemoteUrl()) + '" placeholder="https://api.example.com/feed.json">' +
-        '<div class="row" style="margin-top:16px"><button type="button" class="btn btn-outline" id="m-cancel">Cancel</button><button type="button" class="btn btn-primary" id="m-save">Save</button></div>',
-        function () {
-          var c = $("#m-cancel"); if (c) c.onclick = closeModal;
-          var s = $("#m-save");
-          if (s) s.onclick = function () {
-            var v = ($("#m-server") && $("#m-server").value || "").trim().replace(/\/+$/, "");
-            localStorage.setItem("frank_api", JSON.stringify(v));
-            var g = ($("#m-google") && $("#m-google").value || "").trim();
-            if (g) localStorage.setItem("frank_google_client_id", g); else localStorage.removeItem("frank_google_client_id");
-            CFG.GOOGLE_CLIENT_ID = g;
-            var fu = ($("#m-feed") && $("#m-feed").value || "").trim();
-            if (fu) localStorage.setItem(FEED_REMOTE_KEY, fu); else localStorage.removeItem(FEED_REMOTE_KEY);
-            closeModal(); refreshSettings(); toast("Settings saved");
-          };
-        });
-    });
-  }
-  var setAbout = $("#set-about");
-  if (setAbout) {
-    setAbout.addEventListener("click", function () {
-      openModal("About frankgpt", "<p>Version " + esc(CFG.VERSION || "2.0") + "<br>Free 10s/20s/30s clips. Community feed + comments. APK: GitHub Releases apk-latest, or Add to Home Screen.</p><div class=\"row\"><button type=\"button\" class=\"btn btn-primary\" id=\"m-ok\">OK</button></div>", function () {
-        var ok = $("#m-ok"); if (ok) ok.onclick = closeModal;
+
+    // Settings rows
+    $$("[data-setting]").forEach(function (row) {
+      row.addEventListener("click", function () {
+        var key = row.getAttribute("data-setting");
+        if (key === "signout") {
+          signOut();
+          return;
+        }
+        alertModal("Settings", "This preference is saved locally. Full account features need a backend.");
       });
     });
+    var so = $("#btn-signout");
+    if (so) so.addEventListener("click", signOut);
+
+    // Feed comment
+    var send = $("#btn-comment-send");
+    if (send) {
+      send.addEventListener("click", function () {
+        var input = $("#comment-input");
+        var text = (input && input.value || "").trim();
+        if (!text || !state.currentFeedPost) return;
+        var author = (state.googleProfile && state.googleProfile.name) || (state.user && state.user.name) || "Guest";
+        state.currentFeedPost.comments = state.currentFeedPost.comments || [];
+        state.currentFeedPost.comments.push({ author: author, text: text, ts: Date.now() });
+        var feed = loadFeed();
+        var idx = feed.findIndex(function (p) { return p.id === state.currentFeedPost.id; });
+        if (idx >= 0) feed[idx] = state.currentFeedPost;
+        saveFeed(feed);
+        if (input) input.value = "";
+        renderComments(state.currentFeedPost);
+      });
+    }
+    var closeFeed = $("#modal-feed-close");
+    if (closeFeed) closeFeed.addEventListener("click", function () {
+      $("#modal-feed").classList.remove("on");
+    });
+    var closeAlert = $("#modal-alert-close");
+    if (closeAlert) closeAlert.addEventListener("click", function () {
+      $("#modal-alert").classList.remove("on");
+    });
+
+    // Restore session
+    try {
+      var g = JSON.parse(localStorage.getItem("frank_google") || "null");
+      if (g && localStorage.getItem("frank_token")) {
+        state.googleProfile = g;
+        state.user = { name: g.name, plan: "google" };
+        state.token = localStorage.getItem("frank_token");
+        enterApp(g);
+      } else if (localStorage.getItem("frank_token")) {
+        enterApp({ name: "Guest" });
+      }
+    } catch (e) {}
+
+    refreshCredits();
+    initGoogle();
   }
-  var modalBg = $("#modal-bg");
-  if (modalBg) modalBg.addEventListener("click", function (e) { if (e.target === modalBg) closeModal(); });
-  $$("#nav button[data-screen]").forEach(function (b) {
-    b.addEventListener("click", function () { showScreen(b.getAttribute("data-screen")); });
-  });
-  var createBack = $("#create-back"); if (createBack) createBack.addEventListener("click", function () { showScreen("explore"); });
-  var setBack = $("#set-back"); if (setBack) setBack.addEventListener("click", function () { showScreen("explore"); });
-  var libCreate = $("#lib-create"); if (libCreate) libCreate.addEventListener("click", function () { showScreen("create"); });
-  var btnProfile = $("#btn-profile"); if (btnProfile) btnProfile.addEventListener("click", function () { showScreen("settings"); });
-  var libProfile = $("#lib-profile"); if (libProfile) libProfile.addEventListener("click", function () { showScreen("settings"); });
-  try {
-    var g = JSON.parse(localStorage.getItem("frank_google") || "null");
-    if (g && state.token) { state.googleProfile = g; state.user = { name: g.name, plan: "google", picture: g.picture }; }
-  } catch (e) {}
-  if (state.token) enterApp();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();
