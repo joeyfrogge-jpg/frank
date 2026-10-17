@@ -418,7 +418,9 @@
   }
 
   function esc(s) {
-    return String(s).replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """).replace(/'/g, "&#39;");
+    var d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
   }
 
   function renderTrending() {
