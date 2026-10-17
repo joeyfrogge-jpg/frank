@@ -1,7 +1,7 @@
-/* FrankGPT client config — edit GOOGLE_CLIENT_ID for Google sign-in */
+/* FrankGPT client config */
 window.FRANK_CONFIG = {
-  API_BASE: "",  // empty = free standalone mode (GitHub Pages). Set to your server URL when deployed.
-  GOOGLE_CLIENT_ID: "",  // paste OAuth 2.0 Web Client ID from Google Cloud Console
+  API_BASE: "",
+  GOOGLE_CLIENT_ID: "723846891277-mpb630dmgkvsftdqpacv4dnukh5c207m.apps.googleusercontent.com",
   APP_NAME: "frankgpt",
   VERSION: "2.0.0-free"
 };
