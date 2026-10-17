@@ -1,50 +1,71 @@
-# FrankGPT
+# frankgpt
 
-Free, browser-based video creator. **No GPU required.**
+**Turn your ideas into stunning videos.**
 
-**Live:** https://joeyfrogge-jpg.github.io/frank/
+Free, browser-based AI text-to-video. No GPU. No paid API keys. No third-party apps.
 
-## Features
+**Live demo:** [https://joeyfrogge-jpg.github.io/frank/](https://joeyfrogge-jpg.github.io/frank/)
 
-- Guest login and Google sign-in
-- Create clips: **10s / 20s / 30s**
-- Styles: Realistic, Cinematic, Animated, Abstract
-- Surprise-me random prompts
-- Local library + community feed (when signed in with Google)
-- PWA installable on phone
+---
 
-## How it works
+## What it does
 
-Runs entirely in the browser on GitHub Pages. Images come from a free public image API (rate-limited to about one every 45 seconds). Motion is recorded in your browser. No paid API key and no server required.
+- **Sign in** with Google, email, or continue as guest
+- **Create** 10s / 20s / 30s clips from a text prompt
+- **Styles:** Realistic · Cinematic · Animated · Abstract
+- **Live feed** — post your creations and comment
+- **Library** — clips saved on your device
+- **Plans UI** — Spark (free) and upgrade tiers
+- **PWA** — install to home screen; works offline for the shell
 
-## Files
+## How generation works
 
-```
-index.html          UI
-frank-app.js        App logic
-config.js           Google Client ID / optional API base
-manifest.json       PWA
-sw.js               Service worker
-icons/              App icons
-terms.html          Terms
-privacy.html        Privacy
-docs/MODEL_SETUP.md Notes on free vs optional models
-model_configs/      Model registry example
-.github/workflows/  CI + APK build
-```
+1. Your prompt is sent to [Pollinations](https://pollinations.ai) (free image API)
+2. The still is animated in-browser with a Ken Burns effect (canvas + MediaRecorder)
+3. Result is a WebM video you can save, download, or post to the feed
 
-## Local preview
+Rate limits on the free image path are detected and retried automatically.
+
+## Screens
+
+| Screen | Features |
+|--------|----------|
+| Sign in | Google · Email · Guest |
+| Home | Live feed + My creations |
+| Create | Prompt, style, duration, generate, preview |
+| Plans | Spark / Maker / Director / Studio |
+| Settings | Account, preferences, support, sign out |
+
+UI matches **Wireframe Flow v0.3** (lime accent, Bricolage + Instrument Serif).
+
+## Run locally
 
 ```bash
-python3 -m http.server 5173
-# open http://127.0.0.1:5173
+# any static server
+npx serve .
+# or
+python3 -m http.server 8080
 ```
 
-## Google sign-in
+Open http://localhost:8080
 
-Set `GOOGLE_CLIENT_ID` in `config.js` (already set for this repo).
-Authorized origin: `https://joeyfrogge-jpg.github.io`
+## GitHub Pages
+
+Settings → Pages → Deploy from branch → `main` / root.
 
 ## APK
 
-GitHub Actions workflow builds a debug APK (Capacitor). If the workflow fails on Android SDK setup, use the website as a PWA: Share → Add to Home Screen.
+See `.github/workflows/build-apk.yml` for the Android debug APK workflow (Capacitor / manual SDK).
+
+## Stack
+
+- Pure HTML / CSS / JS (no framework)
+- Pollinations.ai for stills
+- Canvas Ken Burns + MediaRecorder for video
+- Google Identity Services (optional)
+- IndexedDB / localStorage for library & feed
+- Service worker for PWA install
+
+## License
+
+Use freely. Attribution appreciated.
