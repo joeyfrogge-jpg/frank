@@ -3,16 +3,13 @@ name: Build FRANK APK
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - index.html
       - frank-app.js
       - config.js
       - manifest.json
       - sw.js
-      - terms.html
-      - privacy.html
       - icons/**
       - .github/workflows/build-apk.yml
 
@@ -23,22 +20,36 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Install Android cmdline-tools
+        run: |
+          set -e
+          ANDROID_HOME=$HOME/android-sdk
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          cd /tmp
+          curl -fsSL -o cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q cmdtools.zip
+          rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+          mv cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+
+      - name: Accept licenses and install platform
+        run: |
+          set -e
+          yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses >/tmp/lic.txt || true
+          sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Prepare web bundle
         run: |
@@ -48,62 +59,40 @@ jobs:
           [ -f terms.html ] && cp terms.html www/ || true
           [ -f privacy.html ] && cp privacy.html www/ || true
           [ -d icons ] && cp icons/*.png www/icons/ || true
-          ls -la www/
 
-      - name: Create Capacitor project files
+      - name: Capacitor Android
         run: |
-          printf '%s\n' '{
-            "name": "frankgpt",
-            "version": "2.0.0",
-            "private": true,
-            "dependencies": {
-              "@capacitor/android": "6.1.2",
-              "@capacitor/cli": "6.1.2",
-              "@capacitor/core": "6.1.2"
-            }
-          }' > package.json
-          printf '%s\n' '{
-            "appId": "com.frankgpt.app",
-            "appName": "FrankGPT",
-            "webDir": "www",
-            "android": { "allowMixedContent": true },
-            "server": { "androidScheme": "https" }
-          }' > capacitor.config.json
-          cat package.json
-          cat capacitor.config.json
-
-      - name: Install Capacitor and add Android
-        run: |
+          set -e
+          printf '%s\n' '{"name":"frankgpt","version":"2.0.0","private":true,"dependencies":{"@capacitor/android":"6.1.2","@capacitor/cli":"6.1.2","@capacitor/core":"6.1.2"}}' > package.json
+          printf '%s\n' '{"appId":"com.frankgpt.app","appName":"FrankGPT","webDir":"www","android":{"allowMixedContent":true},"server":{"androidScheme":"https"}}' > capacitor.config.json
           npm install
           npx cap add android
           npx cap sync android
-          test -f android/gradlew
 
       - name: Build debug APK
         working-directory: android
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
 
-      - name: Collect APK
+      - name: Publish APK
         run: |
           APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
-          echo "APK=$APK"
           cp "$APK" frank.apk
           ls -la frank.apk
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: frank-apk
           path: frank.apk
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
           name: FrankGPT Android (latest)
-          body: Debug APK for FrankGPT. Free standalone mode works without a server.
+          body: Debug APK. Or use the website as a PWA (Add to Home Screen).
           files: frank.apk
           make_latest: false
         env:
