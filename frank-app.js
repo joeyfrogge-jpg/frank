@@ -1,4 +1,4 @@
-/* frankgpt — full standalone app — no GPU required */
+/* frankgpt — free standalone, no GPU; handles image rate limits */
 (function () {
   "use strict";
 
@@ -131,11 +131,12 @@
     toast("Welcome — browsing as Guest");
   }
 
-  function pollinationsUrl(prompt, w, h) {
+  function pollinationsUrl(prompt, w, h, seed) {
     var q = encodeURIComponent((prompt || "cinematic scene").slice(0, 200));
+    var s = (typeof seed === "number" ? seed : Math.floor(Math.random() * 1e9));
     return "https://image.pollinations.ai/prompt/" + q +
       "?width=" + (w || 768) + "&height=" + (h || 1344) +
-      "&nologo=true&enhance=true&seed=" + Math.floor(Math.random() * 1e9);
+      "&nologo=true&enhance=true&seed=" + s;
   }
 
   function loadImage(url) {
@@ -146,6 +147,54 @@
       img.onerror = function () { reject(new Error("Could not load image")); };
       img.src = url;
     });
+  }
+
+  function looksLikeRateLimitCard(img) {
+    try {
+      var c = document.createElement("canvas");
+      c.width = 48;
+      c.height = 48;
+      var ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0, 48, 48);
+      var d = ctx.getImageData(0, 0, 48, 48).data;
+      var yellow = 0, total = 48 * 48;
+      for (var i = 0; i < d.length; i += 4) {
+        var r = d[i], g = d[i + 1], b = d[i + 2];
+        if (r > 175 && g > 155 && b < 130) yellow++;
+      }
+      return yellow / total > 0.55;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function sleep(ms) {
+    return new Promise(function (r) { setTimeout(r, ms); });
+  }
+
+  async function loadGeneratedImage(prompt, w, h, onStatus) {
+    var attempts = 3;
+    var lastErr = null;
+    for (var i = 0; i < attempts; i++) {
+      try {
+        if (i > 0) {
+          onStatus("Free image limit — waiting 50s before retry " + (i + 1) + "/" + attempts + "…");
+          await sleep(50000);
+        } else {
+          onStatus("FrankGPT · composing frame…");
+        }
+        var url = pollinationsUrl(prompt, w, h, Math.floor(Math.random() * 1e9));
+        var img = await loadImage(url);
+        if (looksLikeRateLimitCard(img)) {
+          lastErr = new Error("Free image limit reached (about 1 every 45 seconds). Wait a moment and try again.");
+          continue;
+        }
+        return img;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error("Could not generate image");
   }
 
   function kenBurnsVideo(img, seconds, aspect) {
@@ -213,12 +262,11 @@
 
   async function frankGenerate(prompt, seconds, aspect, onStatus) {
     onStatus = onStatus || function () {};
-    onStatus("FrankGPT · composing frame…");
     var parts = (aspect || "9:16").split(":");
     var arW = Number(parts[0]) || 9, arH = Number(parts[1]) || 16;
     var ih = 1024;
     var iw = Math.round(ih * arW / arH);
-    var img = await loadImage(pollinationsUrl(prompt, iw, ih));
+    var img = await loadGeneratedImage(prompt, iw, ih, onStatus);
     var secs = Math.min(seconds || 10, 30);
     onStatus("FrankGPT · rendering " + secs + "s clip…");
     return kenBurnsVideo(img, secs, aspect);
@@ -430,13 +478,20 @@
     var list = TRENDING.filter(function (t) {
       return state.cat === "all" || t.cat === state.cat;
     });
-    grid.innerHTML = list.map(function (t) {
-      var img = pollinationsUrl(t.prompt, 640, 400);
+    var grads = [
+      "linear-gradient(135deg,#1e3a5f,#0f172a)",
+      "linear-gradient(135deg,#14532d,#052e16)",
+      "linear-gradient(135deg,#4c1d95,#1e1b4b)",
+      "linear-gradient(135deg,#7c2d12,#1c1917)",
+      "linear-gradient(135deg,#0e7490,#164e63)",
+      "linear-gradient(135deg,#9f1239,#4c0519)"
+    ];
+    grid.innerHTML = list.map(function (t, i) {
       return '<div class="t-card" data-prompt="' + esc(t.prompt) + '">' +
-        '<div class="thumb"><img src="' + img + '" alt="" loading="lazy">' +
+        '<div class="thumb" style="background:' + grads[i % grads.length] + '">' +
         '<div class="play"><svg width="12" height="12" fill="#fff"><path d="M3 1v10l8-5z"/></svg></div></div>' +
         '<div class="meta"><div class="title">' + esc(t.title) + '</div>' +
-        '<div class="views">Inspired</div></div></div>';
+        '<div class="views">Tap to create</div></div></div>';
     }).join("");
     grid.querySelectorAll(".t-card").forEach(function (card) {
       card.addEventListener("click", function () {
@@ -587,7 +642,7 @@
     setAbout.addEventListener("click", function () {
       openModal(
         "About frankgpt",
-        "<p>Version " + esc(CFG.VERSION || "2.0") + "<br>Free path: 10s / 20s / 30s clips in the browser. No GPU required.</p>" +
+        "<p>Version " + esc(CFG.VERSION || "2.0") + "<br>Free path: 10s / 20s / 30s in the browser. No GPU. Image provider may rate-limit (~1 / 45s).</p>" +
         '<div class="row"><button type="button" class="btn btn-primary" id="m-ok">OK</button></div>',
         function () {
           var ok = $("#m-ok");
