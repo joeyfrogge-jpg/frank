@@ -1,20 +1,35 @@
 # Implementation Status
 
-**Last updated:** GitHub migration in progress (joeyfrogge-jpg/frank)
+**Workspace:** https://github.com/joeyfrogge-jpg/frank (main)
 
-## Milestone 1
+**Last updated:** GitHub migration of Milestone 1 foundation
+
+## On GitHub main
 
 | Item | Status |
 |------|--------|
-| Independent repo foundation | In progress on GitHub main |
-| Native REST API | Partial (core modules pushing) |
-| FMIE contracts / UnavailableBackend | Partial |
-| Pip-Boy UI (index.html, app.js) | On main |
-| styles.css / cow.svg | Pending push |
-| Old Puter/Pollinations stack | Removed (frank-app.js, config.js, sw.js) |
+| Independent README / LICENSE / pyproject | Done |
+| Removed Puter/Pollinations app (frank-app.js, config.js, sw.js) | Done |
+| Pip-Boy UI (index.html, styles.css, app.js, assets/cow.svg) | Done |
+| frontend/ copy of UI | Done |
+| FMIE contracts, engine, UnavailableBackend, MockBackend | Done |
+| API main, errors, dependencies, health/system/videos routes | Done |
+| API schemas (system, jobs, videos, assets) | Done |
+| configs/*.yaml | Done |
+| Tests / full docs set | Partial (local complete) |
+
+## Capability honesty
+
+- Default backend: unavailable
+- POST /v1/videos rejects with 503 until a Frank model exists
+- UI Generate button does not fake video
 
 ## Non-claims
 
 - No real AI video generation
 - No hosted generation APIs as Frank backend
-- UI is prototype only
+- No LTX
+
+## Next
+
+Milestone 3 — persistent jobs, queue, worker, cancellation.
