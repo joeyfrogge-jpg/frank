@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06140d">
+  <title>FRANK — AI Video Generator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="stage">
+    <main class="device" aria-label="Frank video terminal">
+      <span class="screw screw-tl"></span>
+      <span class="screw screw-tr"></span>
+      <span class="screw screw-bl"></span>
+      <span class="screw screw-br"></span>
+      <section class="screen">
+        <aside class="sidebar">
+          <div class="brand">
+            <img class="brand-logo" src="assets/cow.svg" alt="">
+            <span class="brand-text">FRANK</span>
+          </div>
+          <nav class="nav" aria-label="Main">
+            <button type="button" class="nav-btn active" data-view="new"><span class="nav-ico">＋</span><span>New</span></button>
+            <button type="button" class="nav-btn" data-view="projects"><span class="nav-ico">📁</span><span>Projects</span></button>
+            <button type="button" class="nav-btn" data-view="edit"><span class="nav-ico">✎</span><span>Edit</span></button>
+            <button type="button" class="nav-btn" data-view="share"><span class="nav-ico">↗</span><span>Share</span></button>
+          </nav>
+          <div class="mascot-area">
+            <img class="mascot" src="assets/cow.svg" alt="Walking cow mascot">
+            <div class="ground"></div>
+          </div>
+        </aside>
+        <section class="workspace">
+          <div class="view view-new" id="view-new">
+            <div class="prompt-panel">
+              <div class="prompt-icon">🖼</div>
+              <label class="sr-only" for="prompt">Describe your video</label>
+              <textarea id="prompt" class="prompt-input" placeholder="Describe your video..." rows="3"></textarea>
+              <p class="prompt-example">Example: A peaceful mountain landscape at sunrise</p>
+            </div>
+            <button type="button" class="btn-generate" id="generate"><span class="spark">✦</span> Generate Video</button>
+          </div>
+          <div class="view view-projects hidden" id="view-projects">
+            <p class="empty-title">Projects</p>
+            <p class="empty-copy">Your saved videos will appear here when the library is connected.</p>
+            <button type="button" class="btn-outline" data-go="new">＋ Start a new video</button>
+          </div>
+          <div class="view view-edit hidden" id="view-edit">
+            <p class="empty-title">Edit</p>
+            <p class="empty-copy">Choose a generated clip to trim or refine.</p>
+            <button type="button" class="btn-outline" data-go="projects">Open projects</button>
+          </div>
+          <div class="view view-share hidden" id="view-share">
+            <p class="empty-title">Share</p>
+            <p class="empty-copy">Generate or open a project first.</p>
+            <button type="button" class="btn-outline" data-go="new">Create a video</button>
+          </div>
+          <footer class="status-bar">
+            <span class="status-left"><img src="assets/cow.svg" alt="" class="status-cow"><span id="status-text">Ready to create</span></span>
+            <span class="status-right"><span class="status-mode">Text to Video</span></span>
+          </footer>
+        </section>
+      </section>
+      <aside class="hardware" aria-hidden="true">
+        <div class="dial"><div class="dial-inner"></div><div class="dial-mark"></div></div>
+        <div class="plate"><div class="plate-title">FRANK</div><div class="plate-sub">AI VIDEO GENERATOR</div></div>
+        <div class="vents"><i></i><i></i><i></i><i></i></div>
+        <div class="power-light"></div>
+      </aside>
+    </main>
+    <p class="notice" id="notice" aria-live="polite"></p>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

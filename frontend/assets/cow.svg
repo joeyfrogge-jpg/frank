@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 190" role="img" aria-label="Walking cow mascot">
+<style>
+.out{stroke:#9bffae;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.body{fill:#d6ffdc}.black{fill:#08200f}.green{fill:#68e989}
+.leg{transform-box:fill-box;transform-origin:top center}
+.front1{animation:stepA .48s ease-in-out infinite alternate}
+.front2{animation:stepB .48s ease-in-out infinite alternate}
+.back1{animation:stepB .48s ease-in-out infinite alternate}
+.back2{animation:stepA .48s ease-in-out infinite alternate}
+.tail{transform-origin:top left;animation:tail .65s ease-in-out infinite alternate}
+.bodygroup{transform-origin:center;animation:bob .24s ease-in-out infinite alternate}
+@keyframes stepA{from{transform:rotate(-19deg)}to{transform:rotate(20deg)}}
+@keyframes stepB{from{transform:rotate(20deg)}to{transform:rotate(-19deg)}}
+@keyframes tail{from{transform:rotate(-8deg)}to{transform:rotate(13deg)}}
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+@media(prefers-reduced-motion:reduce){.leg,.tail,.bodygroup{animation:none}}
+</style>
+<g class="bodygroup">
+  <path class="out black tail" d="M48 78 Q27 82 26 105 Q21 119 12 115 Q5 109 12 103" fill="none"/>
+  <path class="out body" d="M48 69 Q58 48 91 48 L128 51 Q145 54 151 73 L147 108 Q136 126 91 124 L54 114 Q40 99 48 69Z"/>
+  <path class="black" d="M58 62 Q74 51 86 59 L76 79 L61 82 L50 75Z"/>
+  <path class="black" d="M103 89 Q121 74 140 83 L145 101 Q131 118 111 111Z"/>
+  <path class="out body" d="M130 62 Q140 43 158 42 L176 49 Q188 60 180 78 L163 93 L145 86Z"/>
+  <path class="out body" d="M150 48 L146 31 L160 41 M169 45 L181 32 L181 53"/>
+  <path class="black" d="M151 49 L146 35 L155 43Z M172 44 L181 36 L177 49Z"/>
+  <path class="out body" d="M168 67 Q193 62 201 76 Q205 91 189 98 L168 94 Q158 83 168 67Z"/>
+  <ellipse class="out green" cx="188" cy="82" rx="13" ry="10"/>
+  <circle cx="170" cy="62" r="3.6" fill="#07190c"/>
+  <circle cx="171" cy="61" r="1.2" fill="#d6ffdc"/>
+  <path class="out" fill="none" d="M178 96 Q187 101 194 94 M181 85 l3 1 M193 84 l2 1"/>
+  <path class="out body" d="M78 117 L75 133 L92 133 L96 119 M126 118 L127 135 L144 135 L142 114" />
+  <g class="leg front1"><path class="out body" d="M130 117 L137 144 L151 157 L145 164 L128 159 L116 139 L112 119Z"/><path class="out green" d="M145 157 L157 159 Q162 164 156 168 L140 168 L136 163Z"/></g>
+  <g class="leg front2"><path class="out body" d="M106 119 L103 145 L92 159 L98 166 L112 161 L121 140 L124 120Z"/><path class="out green" d="M94 159 L83 162 Q79 167 85 170 L101 169 L104 164Z"/></g>
+  <g class="leg back1"><path class="out body" d="M56 112 L48 139 L34 153 L39 161 L55 157 L69 138 L75 117Z"/><path class="out green" d="M35 153 L24 157 Q20 163 27 166 L43 163 L45 158Z"/></g>
+  <g class="leg back2"><path class="out body" d="M76 119 L77 143 L67 158 L73 165 L86 160 L94 140 L95 120Z"/><path class="out green" d="M69 158 L59 162 Q55 168 62 170 L77 166 L79 161Z"/></g>
+  <path class="out" fill="none" d="M84 48 Q91 40 102 48 M112 50 Q119 45 124 52"/>
+</g>
+</svg>
