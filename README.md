@@ -1,71 +1,73 @@
-# frankgpt
+# Frank
 
-**Turn your ideas into stunning videos.**
+**Frank Independent Video Intelligence & Generation Ecosystem**
 
-Free, browser-based AI text-to-video. No GPU. No paid API keys. No third-party apps.
+Frank is a free-to-access, independently developed AI video-generation platform.
+It consists of two primary workstreams:
 
-**Live demo:** [https://joeyfrogge-jpg.github.io/frank/](https://joeyfrogge-jpg.github.io/frank/)
+- **Workstream A — FMIE (Frank Model Interface Engine)**  
+  Software runtime, native REST API, job orchestration, media pipeline, and model contracts.
 
----
+- **Workstream B — Frank Foundation Model**  
+  Independently researched and trained video-generation model (architecture, data, training, evaluation).
 
-## What it does
+LTX and LTX-derived systems are permanently excluded from Frank’s architecture.
+Hosted third-party generation APIs (including Pollinations / Puter-based pipelines) are not used as Frank’s generation backend.
 
-- **Sign in** with Google, email, or continue as guest
-- **Create** 10s / 20s / 30s clips from a text prompt
-- **Styles:** Realistic · Cinematic · Animated · Abstract
-- **Live feed** — post your creations and comment
-- **Library** — clips saved on your device
-- **Plans UI** — Spark (free) and upgrade tiers
-- **PWA** — install to home screen; works offline for the shell
+## Status (Milestone 1)
 
-## How generation works
+| Component | State |
+|-----------|--------|
+| Repository structure | Implemented |
+| Native REST API (health, capabilities, models, video accept/reject) | Implemented |
+| FMIE contracts & UnavailableBackend | Implemented |
+| MockBackend (tests only) | Implemented |
+| Hardware detection | Implemented |
+| Pip-Boy / CRT terminal UI | Implemented (prototype; not connected to generation) |
+| Persistent jobs / workers | Planned (M3) |
+| Real Frank foundation model | Research (M4+) |
+| End-to-end generation | Not available |
 
-1. Your prompt is sent to [Pollinations](https://pollinations.ai) (free image API)
-2. The still is animated in-browser with a Ken Burns effect (canvas + MediaRecorder)
-3. Result is a WebM video you can save, download, or post to the feed
-
-Rate limits on the free image path are detected and retried automatically.
-
-## Screens
-
-| Screen | Features |
-|--------|----------|
-| Sign in | Google · Email · Guest |
-| Home | Live feed + My creations |
-| Create | Prompt, style, duration, generate, preview |
-| Plans | Spark / Maker / Director / Studio |
-| Settings | Account, preferences, support, sign out |
-
-UI matches **Wireframe Flow v0.3** (lime accent, Bricolage + Instrument Serif).
-
-## Run locally
+## Quick start
 
 ```bash
-# any static server
-npx serve .
-# or
-python3 -m http.server 8080
+cd frank
+pip install fastapi uvicorn pydantic pydantic-settings httpx python-multipart pyyaml aiofiles sqlalchemy aiosqlite pytest pytest-asyncio
+
+PYTHONPATH=. python scripts/verify_installation.py
+PYTHONPATH=. python scripts/inspect_hardware.py
+PYTHONPATH=. pytest -q
+
+uvicorn api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open http://localhost:8080
+UI (static):
 
-## GitHub Pages
+```bash
+python -m http.server 8080 --directory frontend
+# or open index.html at repo root
+```
 
-Settings → Pages → Deploy from branch → `main` / root.
+## API (Milestone 1)
 
-## APK
+| Method | Path | Purpose |
+|--------|------|--------|
+| GET | /health | Liveness |
+| GET | /ready | Readiness |
+| GET | /v1/system/capabilities | Real reported capabilities |
+| GET | /v1/models | Model registry |
+| POST | /v1/videos | Accept text-to-video (rejects until model exists) |
 
-See `.github/workflows/build-apk.yml` for the Android debug APK workflow (Capacitor / manual SDK).
+OpenAPI: `http://127.0.0.1:8000/docs`
 
-## Stack
+## Design principles
 
-- Pure HTML / CSS / JS (no framework)
-- Pollinations.ai for stills
-- Canvas Ken Burns + MediaRecorder for video
-- Google Identity Services (optional)
-- IndexedDB / localStorage for library & feed
-- Service worker for PWA install
+- Local-first, loopback binding by default.
+- Honest capability reporting — never advertise unsupported generation.
+- Engine (FMIE) is separate from any trained model.
+- Mock backends are for tests only and are explicitly labeled.
+- No hidden third-party generation APIs.
 
 ## License
 
-Use freely. Attribution appreciated.
+Apache-2.0. See LICENSE.
