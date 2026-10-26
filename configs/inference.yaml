@@ -1,0 +1,11 @@
+default_width: 512
+default_height: 512
+default_frames: 16
+default_fps: 8
+max_width: 1024
+max_height: 1024
+max_frames: 64
+max_duration_seconds: 8
+supported_formats:
+  - "mp4"
+  - "webm"

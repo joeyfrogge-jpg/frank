@@ -1,0 +1,5 @@
+backend: "unavailable"
+max_concurrent_jobs: 1
+job_timeout_seconds: 3600
+default_device: "cpu"
+allow_mock_for_tests: true

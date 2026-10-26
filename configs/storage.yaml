@@ -1,0 +1,10 @@
+data_root: "./data"
+inputs_dir: "inputs"
+outputs_dir: "outputs"
+temporary_dir: "temporary"
+database_dir: "database"
+checkpoints_dir: "checkpoints"
+datasets_dir: "datasets"
+database_url: "sqlite+aiosqlite:///./data/database/frank.db"
+retention_days: 30
+max_artifact_mb: 500
